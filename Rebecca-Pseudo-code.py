@@ -1,4 +1,4 @@
-class passenger:
+class Passenger:
 
     def __init__(self):
         self.current_pos
@@ -9,27 +9,19 @@ class passenger:
 
         self.id     # useful if sorted lists are used
 
-    def move(self, passenger):
+    def move(self):
 
-    def check_if_move_possible(self, passenger):
+    def check_if_move_possible(self):
         if possible:
             return True
         else:
             return False
 
-class cell:
 
-    def __init__(self, pos):
-        self.pos = pos
-        self.empty = True
-        self.type       # seat/asile
-        self.status     # occupied/empty
-
-
-class plane:
+class Plane:
 
     def __init__(self):
-        self.grid
+        self.grid   # matrix with passenger ID
 
         # Needed? If needed, use sorted lists?
         self.waiting_passengers
