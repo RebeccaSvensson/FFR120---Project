@@ -1,8 +1,8 @@
 class Passenger:
 
     def __init__(self):
-        self.x_position
-        self.y_position
+        self.x
+        self.y
 
         self.id
 
