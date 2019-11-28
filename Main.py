@@ -50,7 +50,7 @@ def create_boarding_groups(pattern, passengers, plane):
         random.shuffle(passengers)
         sorted_list = passengers
 
-    elif pattern is 'Blocks' or pattern is 'ReversePyramid':    # Blocks are front, back middle
+    elif pattern is 'Blocks' or pattern is 'ReversePyramid':    # Blocks are front, back, middle
         n_blocks = 3
         limits = np.linspace(0, plane.layout.shape[1], n_blocks+1)
         limits = np.floor(limits)
@@ -81,18 +81,23 @@ def create_boarding_groups(pattern, passengers, plane):
     elif pattern is 'WindowAisle':
         window = []
         aisle = []
+        middle = []
         for passenger in passengers:
             seat_number = passenger.seat_destination[0]
             if seat_number == 0 or seat_number == plane.layout.shape[0]-1:
                 window.append(passenger)
+            elif seat_number == 1 or seat_number == plane.layout.shape[0]-2:
+                middle.append(passenger)
             else:
                 aisle.append(passenger)
 
         window = sorted(window,
                              key=lambda passenger: (passenger.seat_destination[1]))
+        middle = sorted(middle,
+                             key=lambda passenger: (passenger.seat_destination[1]))
         aisle = sorted(aisle,
                         key=lambda passenger: (passenger.seat_destination[1]))
-        sorted_list = window + aisle
+        sorted_list = window + middle + aisle
 
     return sorted_list
 
