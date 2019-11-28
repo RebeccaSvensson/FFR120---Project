@@ -19,12 +19,18 @@ class Passenger:
         newy = self.y+ydir
         if plane.
     
-    def setPosition(self,x,y):
+    def set_position(self,x,y):
         self.x = x
         self.y = y
         
-    def setSeated(self,isSeated):
+    def set_seated(self,isSeated):
         self.seated = isSeated
+        
+    def correct_row(self):
+        if self.x == self.seat_destination[0]:
+            return True
+        else:
+            return False
 
 class Plane:
 # nrOfRows - of seats, not in grid or layout
@@ -66,7 +72,7 @@ class Plane:
             passenger.setPosition(0,0)
             self.in_plane_passengers.append(passenger)
             
-    def updatePositions(in_plane_passengers):
+    def update_positions(in_plane_passengers):
         positions = np.-np.ones([nrOfRows+seatsInSegment+1,2*seatsInSegments+1])
         for passenger in in_plane_passenger:
             x = passenger.x
@@ -86,7 +92,7 @@ def create_boarding_groups(pattern, passengers):
 def plot():
      
      
-def startBoarding():
+def start_boarding():
     plane.let_in_more_passengers()
     while not allSeated:
         allSeated = stepInTime()
@@ -107,28 +113,21 @@ plane = Plane(passengers)
 queue = random.shuffle(passengers)
 
 # Sort queue according to boarding pattern
-queue = boardingGroups(pattern,queue,plane)
+queue = boarding_groups(pattern,queue,plane)
 
 #Start boarding
-startBoarding()
-stepInTime()
+start_boarding()
+finishedBoarding
+while not finishedBoarding:
+    finishedBoarding = step_in_time()
 
-#tidsloop
-def stepInTime():
-"""    seated = []
-    correctRow = []
-    inAisle = []
-    for passenger in plane.in_plane_passengers:    
-        # för listor för olika states
-        if passenger.seated: #passenger.locationState == 2:
-            seated.append(passenger)
-        elif passenger.checkRow(): #passenger.locationState == 1:
-            correctRow.append(passenger)
-        else: #passenger.locationState == 0
-            inAisle.append(passenger)"""
+#time loop, assuming only three seats
+def step_in_time():
+    seated = 0
     
     for passenger in plane.in_plane_passengers:
         if passenger.seated:
+            seated += 1
             continue
         
         # Current position
@@ -139,9 +138,9 @@ def stepInTime():
         destx = passenger.seat_destination[0]
 
         # If passenger in aisle at the correct row:
-        if passenger.correctRow():
-            if destx == x:
-                passenger.setSeated(True)
+        if passenger.correct_row():
+            if destx == x and not passenger.blocking:
+                passenger.set_seated(True)
                 continue
             elif destx < x:
                 # Direction to move
@@ -155,19 +154,18 @@ def stepInTime():
             if plane.positions[x+xdir,y+ydir] == -1:
                 # If any of first two seats, move
                 if destx == x+xdir or destx == x+2*xdir:
+                    plane.positions[x,y] = -1
                     passenger.move(xdir,ydir)
+                    plane.positions[x+xdir,y+ydir] = passenger.ID
+                    
                 else:
                     if plane.positions[x+2*xdir,y+2*ydir] == -1:
                         passenger.move(xdir,ydir)
                     else:
-                        
-                    
-                    #if all okay, but need to wait:
-                    continue
-                elif passenger.de
-                    passenger.move(xdir,ydir)
-                if plane.positions[x+2*xdir,y+2*ydir] == -1:
-                    passenger.move(xdir,ydir)
+                        idOtherPassenger = plane.positions[x+2*xdir,y+2*ydir]
+
+                        tell_them_to_move(passenger[idOtherPassenger])
+
             # If not empty:
             else:
                 # Check who is there
@@ -175,43 +173,28 @@ def stepInTime():
                 # Check where they are going
                 otherDest = passengers[idOtherPassenger].destination
                 
-                if 
-                if xdir*otherDest[0] > xdir*passenger.destination[0]:
+                #if all okay, but need to wait:
+                if otherDest[0]+xdir == destx or otherDest[0]+2*xdir == destx:
                     continue
-                else:
-                    tellThemToMove(passenger[idOtherPassenger])
+                else: #If they are blocking
+                    tell_them_to_move(passenger.id, passenger[idOtherPassenger])
                     
-
         else:
-            passenger.move(0,1)
+            xdir = 0
+            ydir = 1
+            if plane.positions[x+xdir,y+ydir] == -1:
+                plane.positions[x,y] = -1
+                passenger.move(xdir,ydir)
+                plane.positions[x+xdir,y+ydir] = passenger.ID
     
+    plane.let_in_more_passengers()
     
-    
-    for passenger in correctRow:
+    if seated == len(passengers):
+        return true
         
-        passenger.move()
-        
-        row = passenger.getXPosition()
-        column = passenger.getYPosition()
-        destination = passenger.getDestination()
-        direction = math.sgn(destination[1] - column)
-        
-        if column + direction == destination[1] and not cells[row][column+direction].isOccupied():
-            move to correct seating
-
-        kolla om någon är ivägen mellan aisle och destination
-            om någon är ivägen, kolla om dess plats är innanför din plats:
-        om lugnt med alla platser:
-            move one step
-        om inte lugnt med någon plats:
-            backa och låt dem flytta
+    return false
     
-    for passenger in inAisle:
-        if cell under is free:
-            move one step down
-    
-
-    if not cells[0][0].isOccupied():
-        # Let a new enter
-        passengersInPlane.append(passengers.pop())
+def tell_them_to_move():
+    #1. Blocking = True on those blocking
+    #2. Back up.
 
