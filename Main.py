@@ -1,12 +1,12 @@
 class Passenger:
 
     def __init__(self):
-        self.x
-        self.y
+        self.x_position
+        self.y_position
 
         self.id
 
-        self.seat_destination
+        self.seat_destination # vector [x_dest, y_dest]
 
         self.seated
         self.blocking
@@ -15,7 +15,20 @@ class Passenger:
         return str(self.id) + ' (' + str(self.x) + ',' + str(self.y) + ')'
 
     def move(self, direction):
+        if direction == 'positive_y':
+            self.y +=1
+        elif direction == 'negative_y':
+            self.y -= 1
+        elif direction == 'positive_x':
+            self.x += 1
+        elif direction == 'negative_x':
+            self.x -= 1
 
+    def check_if_right_seat(self):
+        if self.seat_destination[1] == self.y_position:
+            return True
+        else: 
+            False
 
 class Plane:
 
@@ -38,6 +51,8 @@ def create_boarding_groups(pattern, passengers):
         return groups
     elif pattern is ...:
         return groups
+
+
 
 
 def plot():
