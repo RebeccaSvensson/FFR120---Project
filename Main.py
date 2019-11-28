@@ -22,9 +22,8 @@ class Passenger:
         return self.__repr__()
 
     def move(self, xdir,ydir):
-        newx = ´self.x+xdir
+        newx = self.x+xdir
         newy = self.y+ydir
-        if plane.
 
     def set_position(self,x,y):
         self.x = x
