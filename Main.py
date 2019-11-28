@@ -94,6 +94,7 @@ def plot():
      
 def start_boarding():
     plane.let_in_more_passengers()
+    allSeated = False
     while not allSeated:
         allSeated = stepInTime()
         
@@ -117,9 +118,6 @@ queue = boarding_groups(pattern,queue,plane)
 
 #Start boarding
 start_boarding()
-finishedBoarding
-while not finishedBoarding:
-    finishedBoarding = step_in_time()
 
 #time loop, assuming only three seats
 def step_in_time():
