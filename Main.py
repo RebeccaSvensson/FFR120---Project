@@ -153,6 +153,7 @@ def assign_seats(passengers, plane):
 
         passenger.seat_destination = seat
 
+#time loop, assuming only three seats
 def step_in_time():
     seated = 0
 
@@ -185,38 +186,42 @@ def step_in_time():
             if plane.positions[x+xdir,y+ydir] == -1:
                 # If any of first two seats, move
                 if destx == x+xdir or destx == x+2*xdir:
-                    plane.positions[x,y] = -1
-                    passenger.move(xdir,ydir)
-                    plane.positions[x+xdir,y+ydir] = passenger.ID
+                    update_position(passenger.id,x,y,xdir,ydir)
 
                 else:
                     if plane.positions[x+2*xdir,y+2*ydir] == -1:
                         passenger.move(xdir,ydir)
                     else:
-                        idOtherPassenger = plane.positions[x+2*xdir,y+2*ydir]
+                        id_other_passenger = plane.positions[x+2*xdir,y+2*ydir]
 
-                        tell_them_to_move(passenger[idOtherPassenger])
+                        tell_them_to_move(passenger.id, [id_other_passenger])
 
             # If not empty:
             else:
                 # Check who is there
-                idOtherPassenger = plane.positions[x+xdir,y+ydir]
+                id_other_passenger = plane.positions[x+xdir,y+ydir]
                 # Check where they are going
-                otherDest = passengers[idOtherPassenger].destination
+                other_dest = passengers[id_other_passenger].destination
 
                 #if all okay, but need to wait:
-                if otherDest[0]+xdir == destx or otherDest[0]+2*xdir == destx:
+                if other_dest[0]+xdir == destx or other_dest[0]+2*xdir == destx:
                     continue
                 else: #If they are blocking
-                    tell_them_to_move(passenger.id, passenger[idOtherPassenger])
-
+                    if plane.positions[x+2*xdir,y+2*ydir] == -1
+                        tell_them_to_move(passenger.id, [id_other_passenger])
+                    else:
+                        id_second_passenger = plane.positions[x+xdir,y+ydir]
+                        tell_them_to_move(passenger.id, [id_other_passenger, id_second_passenger])                        
         else:
             xdir = 0
             ydir = 1
             if plane.positions[x+xdir,y+ydir] == -1:
-                plane.positions[x,y] = -1
-                passenger.move(xdir,ydir)
-                plane.positions[x+xdir,y+ydir] = passenger.ID
+                update_position(passenger.id,x,y,xdir,ydir)
+
+def update_position(id,x,y,xdir,ydir):
+    plane.positions[x,y] = -1
+    passengers[id].move(xdir,ydir)
+    plane.positions[x+xdir,y+ydir] = id
 
     plane.let_in_more_passengers()
 
@@ -225,9 +230,20 @@ def step_in_time():
 
     return false
 
-def tell_them_to_move():
+def tell_them_to_move(id, other_ids):
+    for other_id in other_ids:
+        passengers[other_id].blocking = True
+    
+    xdist = 0
+    ydist = -1
+    
+    passengers[id] 
+
+    # Problem: Want to back up, but with new moving algorithm (all moving if the one in front move simultaneously), there won't be room.
+    
     #1. Blocking = True on those blocking
     #2. Back up.
+    
 
 def start_boarding():
     plane.let_in_more_passengers()
@@ -256,11 +272,6 @@ passengers_sorted = create_boarding_groups('Blocks', passengers, plane)
 plane.waiting_passengers = passengers_sorted
 
 maxTime = 100
-# Make list of all passengers with id and seat
-
-
 
 #Start boarding
 start_boarding()
-
-#time loop, assuming only three seats
