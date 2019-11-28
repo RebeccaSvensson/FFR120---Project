@@ -40,20 +40,18 @@ class Passenger:
             return False
 
 
-#    def move(self, direction):
-
 class Plane:
 
-    def __init__(self, n_seat_rows, seats_in_row, aisle_width):
+    def __init__(self, nr_of_rows, seats_in_row, aisle_width):
         plane_width = 2*seats_in_row + aisle_width
 
-        self.layout = np.ones((n_seat_rows, plane_width))  #matrix, 0 is asile and 1 is seats
+        self.layout = np.ones((nr_of_rows, plane_width))  #matrix, 0 is asile and 1 is seats
         self.layout[0,:] = -1
         self.layout[-seats_in_row::,:] = -1
         self.layout[0,0:seats_in_row] = 0
         self.layout[seats_in_row,:] = 0
 
-        self.grid = -np.ones((n_seat_rows, plane_width))  # matrix with passenger ID
+        self.grid = -np.ones((nr_of_rows, plane_width))  # matrix with passenger ID
 
         self.passengers = []
 
@@ -67,13 +65,12 @@ class Plane:
             self.in_plane_passengers.append(passenger)
 
     def update_positions(in_plane_passengers):
-        positions = np.-np.ones([nrOfRows+seatsInSegment+1,2*seatsInSegments+1])
+        positions = np.-np.ones([nr_of_rows+seats_in_row+1,2*seats_in_rows+1])
         for passenger in in_plane_passenger:
             x = passenger.x
             y = passenger.y
             id = passenger.id
             positions[x,y] = id
-#    def let_in_more_passengers(self, n_passengers):
 
 
 # Pattern can be: BackToFront, Random, WindowAisle, Blocks, ReversePyramid
@@ -243,11 +240,11 @@ def start_boarding():
 n_passengers = 12
 passengers = []
 
-n_seat_rows = 3
+nr_of_rows = 3
 n_seats_in_row = 2
 aisle_width = 1
 
-plane = Plane(n_seat_rows, n_seats_in_row, aisle_width)
+plane = Plane(nr_of_rows, n_seats_in_row, aisle_width)
 plane.passengers = passengers
 
 for i in range(n_passengers):
@@ -257,14 +254,11 @@ for i in range(n_passengers):
 assign_seats(passengers, plane)
 
 passengers_sorted = create_boarding_groups('Blocks', passengers, plane)
-plane.waiting_passengers = passengers_sorted     
+plane.waiting_passengers = passengers_sorted
 
 maxTime = 100
 # Make list of all passengers with id and seat
-passengers = []     # list/hashmap?
-for row in range(self.nrOfRows):
-    for col in range(2*seatsInSegment):
-        self.passengers.append(Passenger(row*2*seatsInSegment + col))
+
 
 
 #Start boarding
