@@ -25,8 +25,9 @@ class Passenger:
         return self.__repr__()
 
     def move(self, rownrdir,colnrdir):
-        newrownr = self.rownr+rownrdir
-        newcolnr = self.colnr+colnrdir
+        self.rownr = self.rownr+rownrdir
+        self.colnr = self.colnr+colnrdir
+        
 
     def set_position(self,rownr,colnr):
         self.rownr = rownr
@@ -97,7 +98,6 @@ class Plane:
                 self.in_plane_passengers.append(passenger)
                 self.positions[0,0] = passenger.id
                 
-                print(passenger.id)
 
     def update_positions(in_plane_passengers):
         positions = -np.ones([nr_of_rows+seats_in_row+1,2*seats_in_rows+1])
@@ -213,7 +213,7 @@ def step_in_time():
         # If passenger at the correct row:
         if passenger.correct_row():
             # Case 7
-            if passenger.check_seat():
+            if passenger.correct_seat():
                 if passenger.blocking:
                     continue
                 else:
@@ -243,7 +243,7 @@ def step_in_time():
             
             # If second seat yours, check if empty
             elif destcolnr == colnr + 2*destcolnr:
-                idSeat = plane.positions(rownr+rownrdir,colnr+destcolnr)
+                idSeat = plane.positions[rownr+rownrdir,colnr+colnrdir]
                 # If first seat empty
                 if idSeat == -1:
                     update_position(passenger.id,rownr,colnr,rownrdir,colnrdir)
@@ -256,8 +256,8 @@ def step_in_time():
 
             # If third seat yours:
             else:
-                idSeat1 = plane.positions(rownr+rownrdir,colnr+destcolnr)
-                idSeat2 = plane.positions(rownr+rownrdir,colnr+2*destcolnr)
+                idSeat1 = plane.positions[rownr+rownrdir,colnr+colnrdir]
+                idSeat2 = plane.positions[rownr+rownrdir,colnr+2*colnrdir]
                 
                 if idSeat1 == -1 and idSeat2 == -1:
                     update_position(passenger.id,rownr,colnr,rownrdir,colnrdir)
@@ -301,18 +301,17 @@ def tell_them_to_move(id, other_ids):
 
 
 def start_boarding():
-    #plane.let_in_more_passengers()
+    plane.let_in_more_passengers()
     allSeated = False
     t = 1
-    for i in range(3): #while not allSeated:
+    while not allSeated: #for i in range(6): #
         t += 1
-        print(t)
         allSeated = step_in_time()
 
 
 passengers = []
 
-nr_of_rows = 5
+nr_of_rows = 2
 n_seats_in_row = 3
 aisle_width = 1
 
@@ -322,7 +321,7 @@ plane = Plane(nr_of_rows, n_seats_in_row, aisle_width)
 plane.passengers = passengers
 
 for i in range(n_passengers):
-    passenger = Passenger(i, 0, 0)
+    passenger = Passenger(i)
     passengers.append(passenger)
 
 assign_seats(passengers, plane)
