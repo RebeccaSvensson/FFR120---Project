@@ -1,4 +1,7 @@
+import matplotlib as mpl
 import numpy as np
+import matplotlib.pyplot as plt
+import matplotlib.animation as animation
 import random
 
 class Passenger:
@@ -85,11 +88,11 @@ class Plane:
 
     def __init__(self, nr_of_rows, seats_in_row, aisle_width):
         plane_width = 2*seats_in_row + aisle_width
-        plane_length = 1 + nr_of_rows + seats_in_row
+        plane_length = nr_of_rows + seats_in_row
 
-        self.layout = np.ones((plane_length, plane_width))  #matrix, 0 is asile and 1 is seats
+        self.layout = np.ones((plane_length, plane_width))  #matrix, 0 is aisle, 1 is seats and -1 is unavailable
         self.layout[0,:] = -1
-        self.layout[-seats_in_row::,:] = -1
+        self.layout[(-seats_in_row+1)::,:] = -1
         self.layout[0,0:seats_in_row] = 0
         self.layout[:,seats_in_row] = 0
 
@@ -161,6 +164,20 @@ def create_boarding_groups(pattern, passengers, plane):
             for i in range(1, n_blocks, 2):
                 temp_list = create_boarding_groups('WindowAisle', blocks[i], plane)
                 sorted_list.extend(temp_list)
+
+    elif pattern is 'WindowAisleBackToFront':
+        window = []
+        aisle = []
+        middle = []
+        for passenger in passengers:
+            seat_number = passenger.seat_destination[1]
+            if seat_number == 0 or seat_number == plane.layout.shape[1]-1:
+                window.append(passenger)
+            elif seat_number == 1 or seat_number == plane.layout.shape[1]-2:
+                middle.append(passenger)
+            else:
+                aisle.append(passenger)
+        sorted_list = window + middle + aisle
 
     elif pattern is 'WindowAisle':
         window = []
@@ -321,18 +338,45 @@ def tell_them_to_move(id, other_ids):
 
 
 def start_boarding():
-    plane.let_in_more_passengers()
-    allSeated = False
-    t = 1
-    while not allSeated: #for i in range(6): #    
-        t += 1
-        print(t)
-        allSeated = step_in_time()
+    with writer.saving(fig, video_file, 100):
+        for t in range(number_of_timesteps):
+            #t += 1
+            #print(t)
+            allSeated = step_in_time()
+
+            fig.clear()
+            plt.title(f'Boarding method: {boarding_method}. Timestep: {t} ')
+
+            img = plt.imshow(aircraft, interpolation='nearest', cmap=cmap)  #
+            #        plt.scatter(x=np.random.randint(0, 6, 10), y=np.random.randint(0, 29, 10), c='r', s=150)  # passengers positions
+            plt.scatter([passenger.colnr for passenger in plane.in_plane_passengers],
+                        [passenger.rownr for passenger in plane.in_plane_passengers], c='r',
+                        s=150)  # passengers positions
+            ax = plt.gca();
+
+            # Major ticks
+            ax.set_xticks(np.arange(0, plane.layout.shape[1], 1));  # (0,7,1)
+            ax.set_yticks(np.arange(1, plane.layout.shape[0], 1));  # 0,29,1
+
+            # Labels for major ticks
+            ax.set_xticklabels(labels);
+            ax.set_yticklabels(np.arange(1, 1 + nr_of_rows, 1));
+
+            # Minor ticks
+            ax.set_xticks(np.arange(-.5, plane.layout.shape[1], 1), minor=True);  # -0.5,7,1
+            ax.set_yticks(np.arange(-.5, plane.layout.shape[0], 1), minor=True);  # -.5,29,1
+
+            # Gridlines based on minor ticks
+            ax.grid(which='minor', color='black', linestyle='-', linewidth=2)
+
+            writer.grab_frame()
+            if allSeated:
+                break
 
 
 passengers = []
 
-nr_of_rows = 2
+nr_of_rows = 30
 n_seats_in_row = 3
 aisle_width = 1
 
@@ -347,11 +391,39 @@ for i in range(n_passengers):
 
 assign_seats(passengers, plane)
 
-#passengers_sorted = create_boarding_groups('BackToFront', passengers, plane)
-#plane.waiting_passengers = passengers_sorted
-plane.waiting_passengers = passengers
+boarding_method = 'ReversePyramid'
 
-maxTime = 100
+passengers_sorted = create_boarding_groups(boarding_method, passengers, plane)
+plane.waiting_passengers = passengers_sorted
+#plane.waiting_passengers = passengers
+
+# Animation code:
+
+video_file = "myvid.mp4"
+fps = 15
+number_of_timesteps = 300
+
+labels = ['A', 'B', 'C', None, 'D', 'E', 'F']
+aircraft = plane.layout
+
+# Output video writer
+# Emma's writer
+#FFMpegWriter = animation.writers['ffmpeg']
+#metadata = dict(title='Movie Test', artist='Matplotlib', comment='Movie support!')  # kanske överflödig
+#writer = FFMpegWriter(fps=fps, metadata=metadata)
+
+# Johanna's writer:
+plt.rcParams['animation.ffmpeg_path'] = 'C:\\Users\\Johanna\\Documents\\Ffmpeg\\bin\\ffmpeg.exe'
+writer = animation.FFMpegWriter();
+
+fig = plt.figure(figsize=(15, 15))
+ax = fig.gca()
+plt.rcParams.update({'font.size': 22})
+
+cmap = mpl.colors.ListedColormap(['white','black','silver'])
+bounds = [-1,1]
+norm = mpl.colors.BoundaryNorm(bounds, cmap.N)
 
 #Start boarding
 start_boarding()
+
