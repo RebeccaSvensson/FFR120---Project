@@ -3,9 +3,9 @@ import random
 
 class Passenger:
 
-    def __init__(self, id, x = None, y = None):
-        self.x = x  # seat row
-        self.y = y  # seat number
+    def __init__(self, id, rownr = None, colnr = None):
+        self.rownr = rownr  # seat row
+        self.colnr = colnr  # seat number
 
         self.id = id
 
@@ -13,47 +13,77 @@ class Passenger:
 
         self.seated = False
         self.blocking = False
+        self.waitingFor = []
+        
+        self.blocking_destination = None
 
     def __repr__(self):
-  #      return str(self.id) + ' (' + str(self.x) + ',' + str(self.y) + ')'
+  #      return str(self.id) + ' (' + str(self.rownr) + ',' + str(self.colnr) + ')'
         return str(self.seat_destination)
 
     def __str__(self):
         return self.__repr__()
 
-    def move(self, xdir,ydir):
-        newx = ´self.x+xdir
-        newy = self.y+ydir
-        if plane.
+    def move(self, rownrdir,colnrdir):
+        self.rownr = self.rownr+rownrdir
+        self.colnr = self.colnr+colnrdir
+        
 
-    def set_position(self,x,y):
-        self.x = x
-        self.y = y
+    def set_position(self,rownr,colnr):
+        self.rownr = rownr
+        self.colnr = colnr
 
     def set_seated(self,isSeated):
         self.seated = isSeated
+        
+    def correct_seat(self):
+        if self.correct_row():
+            if self.colnr == self.seat_destination[1]:
+                self.seated = True
+                return True
+        return False
 
     def correct_row(self):
-        if self.x == self.seat_destination[0]:
+        if self.rownr == self.seat_destination[0]:
             return True
         else:
             return False
+    
+    def next_row(self):
+        if self.rownr + 1 == self.seat_destination[0]:
+            return True
+        else:
+            return False
+            
+    def now_blocking(self, other_id):
+        self.blocking = True
+        self.seated = False
+        if colnr < n_seats_in_row:
+            self.blocking_destination = [self.destination[0] + 1 + self.destination[1], n_seats_in_row]
+        else:
+            self.blocking_destination = [self.destination[0] + 1 + 2*n_seats_in_row - self.destination[1], n_seats_in_row]
+            
+        passengers(other_id).waitingFor.append(self.id)
+                      
+    def not_blocking(self):
+        self.blocking = False
+        
+        
 
-
-#    def move(self, direction):
 
 class Plane:
 
-    def __init__(self, n_seat_rows, seats_in_row, aisle_width):
+    def __init__(self, nr_of_rows, seats_in_row, aisle_width):
         plane_width = 2*seats_in_row + aisle_width
+        plane_length = 1 + nr_of_rows + seats_in_row
 
-        self.layout = np.ones((n_seat_rows, plane_width))  #matrix, 0 is asile and 1 is seats
+        self.layout = np.ones((plane_length, plane_width))  #matrix, 0 is asile and 1 is seats
         self.layout[0,:] = -1
         self.layout[-seats_in_row::,:] = -1
         self.layout[0,0:seats_in_row] = 0
-        self.layout[seats_in_row,:] = 0
+        self.layout[:,seats_in_row] = 0
 
-        self.grid = -np.ones((n_seat_rows, plane_width))  # matrix with passenger ID
+        self.positions = -np.ones((plane_length, plane_width))  # matrix with passenger ID
 
         self.passengers = []
 
@@ -62,18 +92,20 @@ class Plane:
 
     def let_in_more_passengers(self):
         if self.positions[0,0] == -1:
-            passenger = self.waiting_passangers.pop()
-            passenger.setPosition(0,0)
-            self.in_plane_passengers.append(passenger)
+            if self.waiting_passengers:
+                passenger = self.waiting_passengers.pop()
+                passenger.set_position(0,0)
+                self.in_plane_passengers.append(passenger)
+                self.positions[0,0] = passenger.id
+                
 
     def update_positions(in_plane_passengers):
-        positions = np.-np.ones([nrOfRows+seatsInSegment+1,2*seatsInSegments+1])
+        positions = -np.ones([nr_of_rows+seats_in_row+1,2*seats_in_rows+1])
         for passenger in in_plane_passenger:
-            x = passenger.x
-            y = passenger.y
+            rownr = passenger.rownr
+            colnr = passenger.colnr
             id = passenger.id
-            positions[x,y] = id
-#    def let_in_more_passengers(self, n_passengers):
+            positions[rownr,colnr] = id
 
 
 # Pattern can be: BackToFront, Random, WindowAisle, Blocks, ReversePyramid
@@ -157,6 +189,7 @@ def assign_seats(passengers, plane):
 
         passenger.seat_destination = seat
 
+#time loop, assuming only three seats
 def step_in_time():
     seated = 0
 
@@ -166,108 +199,137 @@ def step_in_time():
             continue
 
         # Current position
-        x = passenger.x
-        y = passenger.y
+        rownr = passenger.rownr
+        colnr = passenger.colnr
 
-        # destination in x
-        destx = passenger.seat_destination[0]
-
-        # If passenger in aisle at the correct row:
-        if passenger.correct_row():
-            if destx == x and not passenger.blocking:
-                passenger.set_seated(True)
-                continue
-            elif destx < x:
-                # Direction to move
-                xdir = -1
-                ydir = 0
-            else:
-                xdir = 1
-                ydir = 0
-
-            # If next pos empty
-            if plane.positions[x+xdir,y+ydir] == -1:
-                # If any of first two seats, move
-                if destx == x+xdir or destx == x+2*xdir:
-                    plane.positions[x,y] = -1
-                    passenger.move(xdir,ydir)
-                    plane.positions[x+xdir,y+ydir] = passenger.ID
-
-                else:
-                    if plane.positions[x+2*xdir,y+2*ydir] == -1:
-                        passenger.move(xdir,ydir)
-                    else:
-                        idOtherPassenger = plane.positions[x+2*xdir,y+2*ydir]
-
-                        tell_them_to_move(passenger[idOtherPassenger])
-
-            # If not empty:
-            else:
-                # Check who is there
-                idOtherPassenger = plane.positions[x+xdir,y+ydir]
-                # Check where they are going
-                otherDest = passengers[idOtherPassenger].destination
-
-                #if all okay, but need to wait:
-                if otherDest[0]+xdir == destx or otherDest[0]+2*xdir == destx:
-                    continue
-                else: #If they are blocking
-                    tell_them_to_move(passenger.id, passenger[idOtherPassenger])
-
+        # Destination in colnr
+        if passenger.blocking:
+            destcolnr = passenger.blocking_destination[1]
+            destrownr = passenger.blocking_destination[0]
         else:
-            xdir = 0
-            ydir = 1
-            if plane.positions[x+xdir,y+ydir] == -1:
-                plane.positions[x,y] = -1
-                passenger.move(xdir,ydir)
-                plane.positions[x+xdir,y+ydir] = passenger.ID
+            destcolnr = passenger.seat_destination[1]
+            destrownr = passenger.seat_destination[0]
+            
+        # If passenger at the correct row:
+        if passenger.correct_row():
+            # Case 7
+            if passenger.correct_seat():
+                if passenger.blocking:
+                    continue
+                else:
+                    passenger.seated = True
+             
+            # Case 5 and 6
+            else: #if not passenger.blocking:
+                if destcolnr < colnr:
+                    # Direction to move
+                    rownrdir = 0
+                    colnrdir = -1
+                else:
+                    rownrdir = 0
+                    colnrdir = 1
+                update_position(passenger.id,rownr,colnr,rownrdir,colnrdir)
+        
+        # Case 4
+        elif colnr == n_seats_in_row and passenger.next_row():
+            rownrdir = 1
+            colnrdir = 0
+
+            # == Check way and move if relevant ==
+            
+            # If first seat is yours, move.
+            if destcolnr == colnr + destcolnr:
+                update_position(passenger.id,rownr,colnr,rownrdir,colnrdir)
+            
+            # If second seat yours, check if empty
+            elif destcolnr == colnr + 2*destcolnr:
+                idSeat = plane.positions[rownr+rownrdir,colnr+colnrdir]
+                # If first seat empty
+                if idSeat == -1:
+                    update_position(passenger.id,rownr,colnr,rownrdir,colnrdir)
+                elif passengers(idSeat).seat_destination[1] == passengers(idSeat).colnr:
+                    print('tell them to move')
+                    continue
+                    #passengers(idSeat).tell_them_to_move()
+                else:
+                    update_position(passenger.id,rownr,colnr,rownrdir,colnrdir)
+
+            # If third seat yours:
+            else:
+                idSeat1 = plane.positions[rownr+rownrdir,colnr+colnrdir]
+                idSeat2 = plane.positions[rownr+rownrdir,colnr+2*colnrdir]
+                
+                if idSeat1 == -1 and idSeat2 == -1:
+                    update_position(passenger.id,rownr,colnr,rownrdir,colnrdir)
+                else:
+                    if idSeat1 == -1:
+                        print('tell them to move')
+                        continue#passengers(idSeat2).tell_them_to_move()
+                    if idSeat2 == -1:
+                        print('tell them to move')
+                        continue#passengers(idSeat1).tell_them_to_move()
+        
+        # Case 1
+        elif rownr == 0 and colnr < n_seats_in_row:
+            rownrdir = 0
+            colnrdir = 1
+            update_position(passenger.id,rownr,colnr,rownrdir,colnrdir)
+        # Case 2 and 3
+        else:
+            rownrdir = 1
+            colnrdir = 0
+            update_position(passenger.id,rownr,colnr,rownrdir,colnrdir)
 
     plane.let_in_more_passengers()
 
     if seated == len(passengers):
-        return true
+        return True
 
-    return false
+    return False
 
-def tell_them_to_move():
+def update_position(id,rownr,colnr,rownrdir,colnrdir):
+    if plane.positions[rownr+rownrdir,colnr+colnrdir] == -1:
+        plane.positions[rownr,colnr] = -1
+        passengers[id].move(rownrdir,colnrdir)
+        plane.positions[rownr+rownrdir,colnr+colnrdir] = id
+
+def tell_them_to_move(id, other_ids):
+    for other_id in other_ids:
+        passengers[other_id].now_blocking(id)
+        
     #1. Blocking = True on those blocking
-    #2. Back up.
+
 
 def start_boarding():
     plane.let_in_more_passengers()
     allSeated = False
-    while not allSeated:
-        allSeated = stepInTime()
+    t = 1
+    while not allSeated: #for i in range(6): #
+        t += 1
+        allSeated = step_in_time()
 
 
-n_passengers = 12
 passengers = []
 
-n_seat_rows = 3
-n_seats_in_row = 2
+nr_of_rows = 2
+n_seats_in_row = 3
 aisle_width = 1
 
-plane = Plane(n_seat_rows, n_seats_in_row, aisle_width)
+n_passengers = nr_of_rows * 2 * n_seats_in_row
+
+plane = Plane(nr_of_rows, n_seats_in_row, aisle_width)
 plane.passengers = passengers
 
 for i in range(n_passengers):
-    passenger = Passenger(i, 0, 0)
+    passenger = Passenger(i)
     passengers.append(passenger)
 
 assign_seats(passengers, plane)
 
-passengers_sorted = create_boarding_groups('Blocks', passengers, plane)
-plane.waiting_passengers = passengers_sorted     
+passengers_sorted = create_boarding_groups('WindowAisle', passengers, plane)
+plane.waiting_passengers = passengers_sorted
 
 maxTime = 100
-# Make list of all passengers with id and seat
-passengers = []     # list/hashmap?
-for row in range(self.nrOfRows):
-    for col in range(2*seatsInSegment):
-        self.passengers.append(Passenger(row*2*seatsInSegment + col))
-
 
 #Start boarding
 start_boarding()
-
-#time loop, assuming only three seats
