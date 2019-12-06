@@ -25,10 +25,9 @@ class Passenger:
         return self.__repr__()
 
     def move(self, rownrdir,colnrdir):
-        self.rownr = self.rownr+rownrdir
-        self.colnr = self.colnr+colnrdir
+        self.rownr = self.rownr + rownrdir
+        self.colnr = self.colnr + colnrdir
         
-
     def set_position(self,rownr,colnr):
         self.rownr = rownr
         self.colnr = colnr
@@ -38,13 +37,20 @@ class Passenger:
         
     def correct_seat(self):
         if self.correct_row():
-            if self.colnr == self.seat_destination[1]:
+            if self.blocking:
+                if self.colnr == self.blocking_destination[1]:
+                    self.blocking = False
+                    return True
+            elif self.colnr == self.seat_destination[1]:
                 self.seated = True
                 return True
         return False
 
     def correct_row(self):
-        if self.rownr == self.seat_destination[0]:
+        if self.blocking:
+            if self.rownr == self.blocking_destination[0]:
+                return True
+        elif self.rownr == self.seat_destination[0]:
             return True
         else:
             return False
@@ -93,7 +99,7 @@ class Plane:
     def let_in_more_passengers(self):
         if self.positions[0,0] == -1:
             if self.waiting_passengers:
-                passenger = self.waiting_passengers.pop()
+                passenger = self.waiting_passengers.pop(0)
                 passenger.set_position(0,0)
                 self.in_plane_passengers.append(passenger)
                 self.positions[0,0] = passenger.id
@@ -215,7 +221,7 @@ def step_in_time():
             # Case 7
             if passenger.correct_seat():
                 if passenger.blocking:
-                    continue
+                    passenger.blocking = False
                 else:
                     passenger.seated = True
              
@@ -304,8 +310,9 @@ def start_boarding():
     plane.let_in_more_passengers()
     allSeated = False
     t = 1
-    while not allSeated: #for i in range(6): #
+    while not allSeated: #for i in range(6): #    
         t += 1
+        print(t)
         allSeated = step_in_time()
 
 
@@ -326,7 +333,7 @@ for i in range(n_passengers):
 
 assign_seats(passengers, plane)
 
-passengers_sorted = create_boarding_groups('WindowAisle', passengers, plane)
+passengers_sorted = create_boarding_groups('BackToFront', passengers, plane)
 plane.waiting_passengers = passengers_sorted
 
 maxTime = 100
