@@ -27,6 +27,10 @@ class Passenger:
     def move(self, rownrdir,colnrdir):
         self.rownr = self.rownr + rownrdir
         self.colnr = self.colnr + colnrdir
+
+    def moveTo(self, new_row_nr, new_col_nr):
+        self.rownr = new_row_nr
+        self.colnr = new_col_nr
         
     def set_position(self,rownr,colnr):
         self.rownr = rownr
@@ -226,7 +230,7 @@ def step_in_time():
                     passenger.seated = True
              
             # Case 5 and 6
-            else: #if not passenger.blocking:
+            else:
                 if destcolnr < colnr:
                     # Direction to move
                     rownrdir = 0
@@ -241,39 +245,49 @@ def step_in_time():
             rownrdir = 1
             colnrdir = 0
 
+            destcoldir = np.sign(destcolnr - colnr)
+
             # == Check way and move if relevant ==
-            
-            # If first seat is yours, move.
-            if destcolnr == colnr + destcolnr:
-                update_position(passenger.id,rownr,colnr,rownrdir,colnrdir)
-            
-            # If second seat yours, check if empty
-            elif destcolnr == colnr + 2*destcolnr:
-                idSeat = plane.positions[rownr+rownrdir,colnr+colnrdir]
-                # If first seat empty
-                if idSeat == -1:
-                    update_position(passenger.id,rownr,colnr,rownrdir,colnrdir)
-                elif passengers(idSeat).seat_destination[1] == passengers(idSeat).colnr:
-                    print('tell them to move')
-                    continue
-                    #passengers(idSeat).tell_them_to_move()
-                else:
+
+            idAisle = int(plane.positions[rownr+rownrdir,colnr+colnrdir])
+            if idAisle != -1:
+                otherDest = plane.passengers[idAisle].seat_destination
+                if otherDest[0] == destrownr:
+                    if otherDest[1] + destcoldir == destcolnr or otherDest[1] + 2*destcoldir == destcolnr:
+                        print('tell them to move')
+                        tell_them_to_move(id,[idAisle])
+            else:
+                # If first seat is yours, move.
+                if destcolnr == colnr + destcoldir:
                     update_position(passenger.id,rownr,colnr,rownrdir,colnrdir)
 
-            # If third seat yours:
-            else:
-                idSeat1 = plane.positions[rownr+rownrdir,colnr+colnrdir]
-                idSeat2 = plane.positions[rownr+rownrdir,colnr+2*colnrdir]
-                
-                if idSeat1 == -1 and idSeat2 == -1:
-                    update_position(passenger.id,rownr,colnr,rownrdir,colnrdir)
+                # If second seat yours, check if empty
+                elif destcolnr == colnr + 2*destcolnr:
+                    idSeat = plane.positions[rownr+rownrdir,colnr+colnrdir]
+                    # If first seat empty
+                    if idSeat == -1:
+                        update_position(passenger.id,rownr,colnr,rownrdir,colnrdir)
+                    elif passengers(idSeat).seat_destination[1] == passengers(idSeat).colnr:
+                        print('tell them to move')
+                        continue
+                        #passengers(idSeat).tell_them_to_move()
+                    else:
+                        update_position(passenger.id,rownr,colnr,rownrdir,colnrdir)
+
+                # If third seat yours:
                 else:
-                    if idSeat1 == -1:
-                        print('tell them to move')
-                        continue#passengers(idSeat2).tell_them_to_move()
-                    if idSeat2 == -1:
-                        print('tell them to move')
-                        continue#passengers(idSeat1).tell_them_to_move()
+                    idSeat1 = plane.positions[rownr+rownrdir,colnr+colnrdir]
+                    idSeat2 = plane.positions[rownr+rownrdir,colnr+2*colnrdir]
+
+                    if idSeat1 == -1 and idSeat2 == -1:
+                        update_position(passenger.id,rownr,colnr,rownrdir,colnrdir)
+                    else:
+                        if idSeat1 == -1:
+                            print('tell them to move')
+                            continue#passengers(idSeat2).tell_them_to_move()
+                        if idSeat2 == -1:
+                            print('tell them to move')
+                            continue#passengers(idSeat1).tell_them_to_move()
         
         # Case 1
         elif rownr == 0 and colnr < n_seats_in_row:
@@ -296,7 +310,7 @@ def step_in_time():
 def update_position(id,rownr,colnr,rownrdir,colnrdir):
     if plane.positions[rownr+rownrdir,colnr+colnrdir] == -1:
         plane.positions[rownr,colnr] = -1
-        passengers[id].move(rownrdir,colnrdir)
+        passengers[id].moveTo(rownr+rownrdir,colnr+colnrdir)
         plane.positions[rownr+rownrdir,colnr+colnrdir] = id
 
 def tell_them_to_move(id, other_ids):
@@ -333,8 +347,9 @@ for i in range(n_passengers):
 
 assign_seats(passengers, plane)
 
-passengers_sorted = create_boarding_groups('BackToFront', passengers, plane)
-plane.waiting_passengers = passengers_sorted
+#passengers_sorted = create_boarding_groups('BackToFront', passengers, plane)
+#plane.waiting_passengers = passengers_sorted
+plane.waiting_passengers = passengers
 
 maxTime = 100
 
