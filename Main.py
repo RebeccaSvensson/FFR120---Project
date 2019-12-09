@@ -223,9 +223,9 @@ def step_in_time():
     for passenger in plane.in_plane_passengers:
         if passenger.blocking:
             first_prio.append(passenger)
-        elif passenger.waiting:
-            second_prio.append(passenger)
         elif passenger.getting_back:
+            second_prio.append(passenger)
+        elif passenger.waiting:
             third_prio.append(passenger)
         else:
             fourth_prio.append(passenger)
@@ -366,9 +366,6 @@ def tell_them_to_move(id, other_ids):
         passengers[other_id].now_blocking(len(other_ids))
     passengers[id].waiting = True
 
-    #1. Blocking = True on those blocking
-
-
 def start_boarding():
     with writer.saving(fig, video_file, 100):
         for t in range(number_of_timesteps):
@@ -431,8 +428,8 @@ plane.waiting_passengers = passengers_sorted
 
 # Animation code:
 
-video_file = "myvid.mp4"
-fps = 15
+video_file = "myvid2.mp4"
+fps = 10
 number_of_timesteps = 300
 
 labels = ['A', 'B', 'C', None, 'D', 'E', 'F']
