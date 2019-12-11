@@ -210,7 +210,6 @@ def create_boarding_groups(pattern, passengers, plane):
         sorted_list = window + middle + aisle
 
     elif pattern is 'SteffenModified':
-
         block_1 = []
         block_2 = []
         block_3 = []
@@ -219,7 +218,10 @@ def create_boarding_groups(pattern, passengers, plane):
         random.shuffle(temp_passengers)
          
         for passenger in temp_passengers:
+<<<<<<< Updated upstream
     
+=======
+>>>>>>> Stashed changes
             if passenger.seat_destination[0] % 2 == 0 and passenger.seat_destination[1] > plane.layout.shape[1] / 2:
                 block_1.append(passenger)  
             elif passenger.seat_destination[0] % 2 == 0 and passenger.seat_destination[1] < plane.layout.shape[1] / 2: 
@@ -230,8 +232,6 @@ def create_boarding_groups(pattern, passengers, plane):
                 block_4.append(passenger)
         
         sorted_list = block_1 + block_2 + block_3 + block_4
-        
-
 
     return sorted_list
 
