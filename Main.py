@@ -105,7 +105,6 @@ class Plane:
                 passenger.set_position(0,0)
                 self.in_plane_passengers.append(passenger)
                 self.positions[0,0] = passenger.id
-                
 
     def update_positions(in_plane_passengers):
         positions = -np.ones([nr_of_rows+seats_in_row+1,2*seats_in_rows+1])
@@ -117,18 +116,20 @@ class Plane:
 
 
 # Pattern can be: BackToFront, Random, WindowAisle, WindowAisleSorted, Blocks, ReversePyramid, SteffenModified
+# Pattern can be: BackToFrontSorted, Random, WindowAisle, WindowAisleSorted, Blocks, ReversePyramid, BackToFront
 def create_boarding_groups(pattern, passengers, plane):
     sorted_list = []
 
-    if pattern is 'BackToFront':
+    if pattern is 'BackToFrontSorted':
         sorted_list = sorted(passengers, key=lambda passenger: (passenger.seat_destination[0]))
         sorted_list.reverse()
 
     elif pattern is 'Random':
-        random.shuffle(passengers)
-        sorted_list = passengers
+        temp_passenger_list = passengers.Copy()
+        random.shuffle(temp_passenger_list)
+        sorted_list = temp_passenger_list
 
-    elif pattern is 'Blocks' or pattern is 'ReversePyramid':    # Blocks are front, back, middle
+    elif pattern is 'Blocks' or pattern is 'ReversePyramid' or pattern is 'BackToFront':    # Blocks are front, back, middle
         n_blocks = 3
         limits = np.linspace(0, plane.layout.shape[0], n_blocks+1)
         limits = np.floor(limits)
@@ -160,41 +161,51 @@ def create_boarding_groups(pattern, passengers, plane):
                 temp_list = create_boarding_groups('WindowAisle', blocks[i], plane)
                 sorted_list.extend(temp_list)
 
-    elif pattern is 'WindowAisleBackToFront':
-        window = []
-        aisle = []
-        middle = []
-        for passenger in passengers:
-            seat_number = passenger.seat_destination[1]
-            if seat_number == 0 or seat_number == plane.layout.shape[1]-1:
-                window.append(passenger)
-            elif seat_number == 1 or seat_number == plane.layout.shape[1]-2:
-                middle.append(passenger)
-            else:
-                aisle.append(passenger)
-        sorted_list = window + middle + aisle
+        elif pattern is 'BackToFront':
+            for i in range(n_blocks-1, -1, -1):
+                sorted_list.extend(blocks[i])
+
 
     elif pattern is 'WindowAisle':
         window = []
         aisle = []
         middle = []
+
         for passenger in passengers:
             seat_number = passenger.seat_destination[1]
-            if seat_number == 0 or seat_number == plane.layout.shape[1]-1:
+            if seat_number == 0 or seat_number == plane.layout.shape[1] - 1:
                 window.append(passenger)
-            elif seat_number == 1 or seat_number == plane.layout.shape[1]-2:
+
+            elif seat_number == 1 or seat_number == plane.layout.shape[1] - 2:
+                middle.append(passenger)
+
+            else:
+                aisle.append(passenger)
+
+        sorted_list = window + middle + aisle
+
+
+    elif pattern is 'WindowAisleSorted':
+        window = []
+        aisle = []
+        middle = []
+        for passenger in passengers:
+            seat_number = passenger.seat_destination[1]
+            if seat_number == 0 or seat_number == plane.layout.shape[1] - 1:
+                window.append(passenger)
+            elif seat_number == 1 or seat_number == plane.layout.shape[1] - 2:
                 middle.append(passenger)
             else:
                 aisle.append(passenger)
 
         window = sorted(window,
-                             key=lambda passenger: (passenger.seat_destination[0]))
+                        key=lambda passenger: (passenger.seat_destination[0]))
         window.reverse()
         middle = sorted(middle,
-                             key=lambda passenger: (passenger.seat_destination[0]))
+                        key=lambda passenger: (passenger.seat_destination[0]))
         middle.reverse()
         aisle = sorted(aisle,
-                        key=lambda passenger: (passenger.seat_destination[0]))
+                       key=lambda passenger: (passenger.seat_destination[0]))
         aisle.reverse()
         sorted_list = window + middle + aisle
 
@@ -204,9 +215,10 @@ def create_boarding_groups(pattern, passengers, plane):
         block_2 = []
         block_3 = []
         block_4 = []
-        random.shuffle(passengers)
+        temp_passengers = passengers.copy()
+        random.shuffle(temp_passengers)
          
-        for passenger in passengers:
+        for passenger in temp_passengers:
     
             if passenger.seat_destination[0] % 2 == 0 and passenger.seat_destination[1] > plane.layout.shape[1] / 2:
                 block_1.append(passenger)  
@@ -233,7 +245,6 @@ def assign_seats(passengers, plane):
 
         passenger.seat_destination = seat
 
-#time loop, assuming only three seats
 def step_in_time():
     seated = 0
 
@@ -245,9 +256,9 @@ def step_in_time():
     for passenger in plane.in_plane_passengers:
         if passenger.blocking:
             first_prio.append(passenger)
-        elif passenger.getting_back:
-            second_prio.append(passenger)
         elif passenger.waiting:
+            second_prio.append(passenger)
+        elif passenger.getting_back:
             third_prio.append(passenger)
         else:
             fourth_prio.append(passenger)
@@ -305,9 +316,31 @@ def step_in_time():
                 update_position(passenger.id,rownr,colnr,rownrdir,colnrdir)
         
         # Case 4
-        elif colnr == n_seats_in_row and passenger.next_row():
-            rownrdir = 1
+        elif colnr == n_seats_in_row: # and passenger.next_row():
+
+            rownrdir = np.sign(destrownr - rownr)
             colnrdir = 0
+            if rownrdir < 0:
+                update_position(passenger.id, rownr, colnr, rownrdir, colnrdir)
+                continue
+
+            # Case 2 and 3
+            if not passenger.waiting:
+                idTwoSteps = int(plane.positions[rownr + 2, colnr])
+                idThreeSteps = int(plane.positions[rownr + 3, colnr])
+                if idTwoSteps != -1:
+                    if passengers[idTwoSteps].seat_destination[0] == rownr + 1:
+                        continue
+                if idThreeSteps != -1:
+                    if passengers[idThreeSteps].seat_destination[0] == rownr + 1:
+                        continue
+
+            if not passenger.next_row():
+                update_position(passenger.id, rownr, colnr, rownrdir, colnrdir)
+                continue
+
+            #rownrdir = 1
+            #colnrdir = 0
 
             destcoldir = np.sign(destcolnr - colnr)
 
@@ -364,11 +397,6 @@ def step_in_time():
             rownrdir = 0
             colnrdir = 1
             update_position(passenger.id,rownr,colnr,rownrdir,colnrdir)
-        # Case 2 and 3
-        else:
-            rownrdir = np.sign(destrownr - rownr)
-            colnrdir = 0
-            update_position(passenger.id,rownr,colnr,rownrdir,colnrdir)
 
     plane.let_in_more_passengers()
 
@@ -398,7 +426,7 @@ def start_boarding():
             fig.clear()
             plt.title(f'Boarding method: {boarding_method}. Timestep: {t} ')
 
-            img = plt.imshow(aircraft, interpolation='nearest', cmap=cmap)  #
+            img = plt.imshow(plane.layout, interpolation='nearest', cmap=cmap)  #
             #        plt.scatter(x=np.random.randint(0, 6, 10), y=np.random.randint(0, 29, 10), c='r', s=150)  # passengers positions
             plt.scatter([passenger.colnr for passenger in plane.in_plane_passengers],
                         [passenger.rownr for passenger in plane.in_plane_passengers], c='r',
@@ -427,12 +455,21 @@ def start_boarding():
 
 passengers = []
 
+# == Layout settings ==
 nr_of_rows = 30
 n_seats_in_row = 3
 aisle_width = 1
+boarding_method = 'BackToFront'
 
 n_passengers = nr_of_rows * 2 * n_seats_in_row
 
+# == Video settings ==
+video_file = "myvid2.mp4"
+fps = 8
+number_of_timesteps = 1000
+labels = ['A', 'B', 'C', None, 'D', 'E', 'F']
+
+# == Get the passengers in order ==
 plane = Plane(nr_of_rows, n_seats_in_row, aisle_width)
 plane.passengers = passengers
 
@@ -442,20 +479,15 @@ for i in range(n_passengers):
 
 assign_seats(passengers, plane)
 
+<<<<<<< HEAD
 boarding_method = 'steffen_modified'
 
+=======
+>>>>>>> master
 passengers_sorted = create_boarding_groups(boarding_method, passengers, plane)
 plane.waiting_passengers = passengers_sorted
-#plane.waiting_passengers = passengers
 
-# Animation code:
-
-video_file = "myvid2.mp4"
-fps = 10
-number_of_timesteps = 300
-
-labels = ['A', 'B', 'C', None, 'D', 'E', 'F']
-aircraft = plane.layout
+# == Video initialization ==
 
 # Output video writer
 # Emma's writer
@@ -475,6 +507,6 @@ cmap = mpl.colors.ListedColormap(['white','black','silver'])
 bounds = [-1,1]
 norm = mpl.colors.BoundaryNorm(bounds, cmap.N)
 
-#Start boarding
+# == Start boarding ==
 start_boarding()
 
