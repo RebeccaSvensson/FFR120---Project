@@ -115,8 +115,9 @@ def create_boarding_groups(pattern, passengers, plane):
         sorted_list.reverse()
 
     elif pattern is 'Random':
-        random.shuffle(passengers)
-        sorted_list = passengers
+        temp_passenger_list = passengers.Copy()
+        random.shuffle(temp_passenger_list)
+        sorted_list = temp_passenger_list
 
     elif pattern is 'Blocks' or pattern is 'ReversePyramid' or pattern is 'BackToFront':    # Blocks are front, back, middle
         n_blocks = 3
