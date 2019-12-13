@@ -18,7 +18,9 @@ class Passenger:
         self.blocking = False
         self.waiting = False
         self.getting_back = False
-        
+
+        self.luggage = True
+        self.left_luggage = 0
         self.blocking_destination = None
 
     def __repr__(self):
@@ -62,7 +64,14 @@ class Passenger:
             return True
         else:
             return False
-    
+
+    def handle_luggage(self):
+        if self.luggage:
+            if self.rownr == self.seat_destination[0] and self.colnr == n_seats_in_row:
+                self.left_luggage += 1
+                if self.left_luggage == 3:
+                    self.luggage = False
+
     def next_row(self):
         if self.rownr + 1 == self.seat_destination[0]:
             return True
@@ -106,7 +115,7 @@ class Plane:
                 self.in_plane_passengers.append(passenger)
                 self.positions[0,0] = passenger.id
 
-# Pattern can be: BackToFrontSorted, Random, WindowAisle, WindowAisleSorted, Blocks, ReversePyramid, BackToFront
+# Pattern can be: BackToFrontSorted, Random, WindowAisle, WindowAisleSorted, Blocks, ReversePyramid, BackToFront, SteffenModified
 def create_boarding_groups(pattern, passengers, plane):
     sorted_list = []
 
@@ -115,8 +124,9 @@ def create_boarding_groups(pattern, passengers, plane):
         sorted_list.reverse()
 
     elif pattern is 'Random':
-        random.shuffle(passengers)
-        sorted_list = passengers
+        temp_passenger_list = passengers.copy()
+        random.shuffle(temp_passenger_list)
+        sorted_list = temp_passenger_list
 
     elif pattern is 'Blocks' or pattern is 'ReversePyramid' or pattern is 'BackToFront':    # Blocks are front, back, middle
         n_blocks = 3
@@ -198,6 +208,26 @@ def create_boarding_groups(pattern, passengers, plane):
         aisle.reverse()
         sorted_list = window + middle + aisle
 
+    elif pattern is 'SteffenModified':
+        block_1 = []
+        block_2 = []
+        block_3 = []
+        block_4 = []
+        temp_passengers = passengers.copy()
+        random.shuffle(temp_passengers)
+
+        for passenger in temp_passengers:
+            if passenger.seat_destination[0] % 2 == 0 and passenger.seat_destination[1] > plane.layout.shape[1] / 2:
+                block_1.append(passenger)
+            elif passenger.seat_destination[0] % 2 == 0 and passenger.seat_destination[1] < plane.layout.shape[1] / 2:
+                block_2.append(passenger)
+            elif passenger.seat_destination[0] % 2 != 0 and passenger.seat_destination[1] > plane.layout.shape[1] / 2:
+                block_3.append(passenger)
+            else:
+                block_4.append(passenger)
+
+        sorted_list = block_1 + block_2 + block_3 + block_4
+
     return sorted_list
 
 def assign_seats(passengers, plane):
@@ -247,14 +277,31 @@ def step_in_time():
             destcolnr = passenger.seat_destination[1]
             destrownr = passenger.seat_destination[0]
 
+        passenger.handle_luggage()
+
         if passenger.blocking:
             if colnr == destcolnr:
+                if rownr == passenger.seat_destination[0]:
+                    if passenger.luggage:
+                        continue
                 colnrdir = 0
                 rownrdir = np.sign(destrownr - rownr)
+                if rownr + 2 < plane.layout.shape[0]:
+                    idTwoSteps = int(plane.positions[rownr + 2, colnr])
+                    if idTwoSteps != -1:
+                        if passengers[idTwoSteps].seat_destination[0] == rownr + 1:
+                            continue
+                if rownr + 3 < plane.layout.shape[0]:
+                    idThreeSteps = int(plane.positions[rownr + 3, colnr])
+                    if idThreeSteps != -1:
+                        if passengers[idThreeSteps].seat_destination[0] == rownr + 1:
+                            continue
+
                 update_position(passenger.id,rownr,colnr,rownrdir,colnrdir)
                 if passenger.correct_row():
                     passenger.blocking = False
                     passenger.getting_back = True
+
             else:
                 colnrdir = np.sign(destcolnr - colnr)
                 rownrdir = 0
@@ -268,7 +315,10 @@ def step_in_time():
                 passenger.seated = True
                 passenger.waiting = False
                 passenger.getting_back = False
-             
+
+            elif passenger.luggage:
+                continue
+
             # Case 5 and 6
             else:
                 if destcolnr < colnr:
@@ -303,9 +353,6 @@ def step_in_time():
             if not passenger.next_row():
                 update_position(passenger.id, rownr, colnr, rownrdir, colnrdir)
                 continue
-
-            #rownrdir = 1
-            #colnrdir = 0
 
             destcoldir = np.sign(destcolnr - colnr)
 
@@ -396,6 +443,9 @@ def start_boarding():
             plt.scatter([passenger.colnr for passenger in plane.in_plane_passengers],
                         [passenger.rownr for passenger in plane.in_plane_passengers], c='r',
                         s=150)  # passengers positions
+            plt.scatter([passenger.colnr for passenger in plane.in_plane_passengers if passenger.luggage],
+                        [passenger.rownr for passenger in plane.in_plane_passengers if passenger.luggage], c='k',
+                        s=40)
             ax = plt.gca();
 
             # Major ticks
@@ -421,16 +471,16 @@ def start_boarding():
 passengers = []
 
 # == Layout settings ==
-nr_of_rows = 30
+nr_of_rows = 10
 n_seats_in_row = 3
 aisle_width = 1
-boarding_method = 'BackToFront'
+boarding_method = 'Blocks'
 
 n_passengers = nr_of_rows * 2 * n_seats_in_row
 
 # == Video settings ==
 video_file = "myvid2.mp4"
-fps = 8
+fps = 4
 number_of_timesteps = 1000
 labels = ['A', 'B', 'C', None, 'D', 'E', 'F']
 
@@ -457,7 +507,7 @@ plane.waiting_passengers = passengers_sorted
 
 # Johanna's writer:
 plt.rcParams['animation.ffmpeg_path'] = 'C:\\Users\\Johanna\\Documents\\Ffmpeg\\bin\\ffmpeg.exe'
-writer = animation.FFMpegWriter();
+writer = animation.FFMpegWriter(fps = fps);
 
 fig = plt.figure(figsize=(15, 15))
 ax = fig.gca()
