@@ -145,8 +145,8 @@ def create_boarding_groups(pattern, passengers, plane):
 
         if pattern is 'Blocks':
             # Sorts the blocks so no connecting blocks are boarded after one another
-            for i in range(0, n_blocks, 2):
-                sorted_list.extend(blocks[i])
+            for i in range(n_blocks, 0, -2):
+                sorted_list.extend(blocks[i-1])
 
             for i in range(1, n_blocks, 2):
                 sorted_list.extend(blocks[i])
@@ -473,7 +473,7 @@ passengers = []
 nr_of_rows = 10
 n_seats_in_row = 3
 aisle_width = 1
-boarding_method = 'WindowAisle'
+boarding_method = 'Blocks'
 
 n_passengers = nr_of_rows * 2 * n_seats_in_row
 
@@ -505,7 +505,8 @@ plane.waiting_passengers = passengers_sorted
 #writer = FFMpegWriter(fps=fps, metadata=metadata)
 
 # Johanna's writer:
-plt.rcParams['animation.ffmpeg_path'] = 'C:\\Users\\Johanna\\Documents\\Ffmpeg\\bin\\ffmpeg.exe'
+#plt.rcParams['animation.ffmpeg_path'] = 'C:\\Users\\Johanna\\Documents\\Ffmpeg\\bin\\ffmpeg.exe'
+plt.rcParams['animation.ffmpeg_path'] = 'C:/Users/Rebecca/Downloads/ffmpeg-20191125-d5e3d8e-win64-static/ffmpeg-20191125-d5e3d8e-win64-static/bin/ffmpeg'
 writer = animation.FFMpegWriter(fps = fps);
 
 fig = plt.figure(figsize=(15, 15))
