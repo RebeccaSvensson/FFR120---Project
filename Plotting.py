@@ -436,57 +436,130 @@ def tell_them_to_move(id, other_ids):
 
 
 def start_boarding():
-    for t in range(number_of_timesteps):
-        allSeated = step_in_time()
+    with writer.saving(fig, video_file, 100):
+        for t in range(number_of_timesteps):
+            # t += 1
+            # print(t)
+            allSeated = step_in_time()
 
-        if allSeated:
-            return t
-    return t
+            fig.clear()
+            plt.title(f'Boarding method: {boarding_method}. Timestep: {t} ')
+#            plt.title(f'Plane layout')
+
+            img = plt.imshow(plane.layout, interpolation='nearest', cmap=cmap)  #
+            #        plt.scatter(x=np.random.randint(0, 6, 10), y=np.random.randint(0, 29, 10), c='r', s=150)  # passengers positions
+            """Startoflayout
+            rowLeavingBag = []
+            colLeavingBag = []
+            rowBlocking = []
+            colBlocking = []
+            rowRest = []
+            colRest = []
+
+            for passenger in plane.in_plane_passengers:
+                if passenger.left_luggage > 0 and passenger.left_luggage < 3:
+                    rowLeavingBag.append(passenger.rownr)
+                    colLeavingBag.append(passenger.colnr)
+                elif passenger.blocking or passenger.getting_back:
+                    rowBlocking.append(passenger.rownr)
+                    colBlocking.append(passenger.colnr)
+                else:
+                    rowRest.append(passenger.rownr)
+                    colRest.append(passenger.colnr)
+
+            plt.scatter(colLeavingBag,
+                        rowLeavingBag, c='b',
+                        s=150)  # passengers positions
+            plt.scatter(colBlocking,
+                        rowBlocking, c='y',
+                        s=150)  # passengers positions
+
+            plt.scatter(colRest,
+                        rowRest, c='r',
+                        s=150)  # passengers positions
 
 
-nr_runs = 1000
-time_results = np.zeros(nr_runs)
+            """plt.scatter([passenger.colnr for passenger in plane.in_plane_passengers],
+                        [passenger.rownr for passenger in plane.in_plane_passengers], c='r',
+                        s=150)  # passengers positions
+            plt.scatter([passenger.colnr for passenger in plane.in_plane_passengers if passenger.left_luggage > 0 and passenger.left_luggage < 3],
+                        [passenger.rownr for passenger in plane.in_plane_passengers if passenger.left_luggage > 0 and passenger.left_luggage < 3],
+                        c='b', s=150)"""
+            plt.scatter([passenger.colnr for passenger in plane.in_plane_passengers if passenger.luggage],
+                        [passenger.rownr for passenger in plane.in_plane_passengers if passenger.luggage], c='w',
+                        s=40)
+                        
+            endoflayout"""
+            ax = plt.gca()
+
+            # Major ticks
+            ax.set_xticks(np.arange(0, plane.layout.shape[1], 1));  # (0,7,1)
+            ax.set_yticks(np.arange(1, 1 + nr_of_rows, 1));  # 0,29,1
+
+            # Labels for major ticks
+            ax.set_xticklabels(labels);
+            ax.set_yticklabels(np.arange(1, 1 + nr_of_rows, 1));
+
+            # Minor ticks
+            ax.set_xticks(np.arange(-.5, plane.layout.shape[1], 1), minor=True);  # -0.5,7,1
+            ax.set_yticks(np.arange(-.5, plane.layout.shape[0], 1), minor=True);  # -.5,29,1
+
+            # Gridlines based on minor ticks
+            ax.grid(which='minor', color='white', linestyle='-', linewidth=2)
+
+            writer.grab_frame()
+            if allSeated:
+                break
+
+
+passengers = []
 
 # == Layout settings ==
 nr_of_rows = 30
 n_seats_in_row = 3
 aisle_width = 1
-boarding_method = 'Blocks'
+boarding_method = 'Random'
 
 n_passengers = nr_of_rows * 2 * n_seats_in_row
 
 # == Video settings ==
-number_of_timesteps = 1000
+video_file = "test2.mp4"
+fps = 2
+number_of_timesteps = 20
+labels = ['A', 'B', 'C', None, 'D', 'E', 'F']
 
-it = 0
-while it < nr_runs:
-    print(it)
-    passengers = []
+# == Get the passengers in order ==
+plane = Plane(nr_of_rows, n_seats_in_row, aisle_width)
+plane.passengers = passengers
 
-    # == Get the passengers in order ==
-    plane = Plane(nr_of_rows, n_seats_in_row, aisle_width)
-    plane.passengers = passengers
+for i in range(n_passengers):
+    passenger = Passenger(i)
+    passengers.append(passenger)
 
-    for i in range(n_passengers):
-        passenger = Passenger(i)
-        passengers.append(passenger)
+assign_seats(passengers, plane)
 
-    assign_seats(passengers, plane)
+passengers_sorted = create_boarding_groups(boarding_method, passengers, plane)
+plane.waiting_passengers = passengers_sorted
 
-    passengers_sorted = create_boarding_groups(boarding_method, passengers, plane)
-    plane.waiting_passengers = passengers_sorted
+# == Video initialization ==
 
-    # == Start boarding ==
-    ti = start_boarding()
-    if ti != (number_of_timesteps-1):
-        time_results[it] = ti
-        it = it+1
+# Output video writer
+# Emma's writer
+# FFMpegWriter = animation.writers['ffmpeg']
+# metadata = dict(title='Movie Test', artist='Matplotlib', comment='Movie support!')  # kanske överflödig
+# writer = FFMpegWriter(fps=fps, metadata=metadata)
 
-print(f"Mean: {np.mean(time_results)}")
-print(f"Median: {np.median(time_results)}")
-print(f"Min time: {min(time_results)}")
-print(f"Max time: {max(time_results)}")
+# Johanna's writer:
+plt.rcParams['animation.ffmpeg_path'] = 'C:\\Users\\Johanna\\Documents\\Ffmpeg\\bin\\ffmpeg.exe'
+writer = animation.FFMpegWriter(fps=fps);
 
-plt.hist(time_results, bins = 30)
-plt.gca().set(title = 'Time distribution for Rotating Blocks', xlabel='Boarding time', ylabel='Nr of runs')
-plt.show()
+fig = plt.figure(figsize=(15, 15))
+ax = fig.gca()
+plt.rcParams.update({'font.size': 22})
+
+cmap = mpl.colors.ListedColormap(['black', 'white', 'silver'])
+bounds = [-1, 1]
+norm = mpl.colors.BoundaryNorm(bounds, cmap.N)
+
+# == Start boarding ==
+start_boarding()
