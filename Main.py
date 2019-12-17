@@ -450,43 +450,72 @@ def update_position(id,rownr,colnr,rownrdir,colnrdir):
 
 def tell_them_to_move(id, other_ids):
     for other_id in other_ids:
-        passengers[other_id].now_blocking(len(other_ids))
+        if passengers[other_id].rownr == passengers[other_id].seat_destination[0]:
+            passengers[other_id].now_blocking(len(other_ids))
     passengers[id].waiting = True
 
 def start_boarding():
     with writer.saving(fig, video_file, 100):
         for t in range(number_of_timesteps):
-            #t += 1
-            #print(t)
             allSeated = step_in_time()
 
             fig.clear()
             plt.title(f'Boarding method: {boarding_method}. Timestep: {t} ')
 
             img = plt.imshow(plane.layout, interpolation='nearest', cmap=cmap)  #
-            #        plt.scatter(x=np.random.randint(0, 6, 10), y=np.random.randint(0, 29, 10), c='r', s=150)  # passengers positions
-            plt.scatter([passenger.colnr for passenger in plane.in_plane_passengers],
-                        [passenger.rownr for passenger in plane.in_plane_passengers], c='r',
+
+            rowLeavingBag = []
+            colLeavingBag = []
+            rowBlocking = []
+            colBlocking = []
+            rowSeated = []
+            colSeated = []
+            rowRest = []
+            colRest = []
+
+
+            for passenger in plane.in_plane_passengers:
+                if passenger.left_luggage > 0 and passenger.left_luggage < 3:
+                    rowLeavingBag.append(passenger.rownr)
+                    colLeavingBag.append(passenger.colnr)
+                elif passenger.blocking or passenger.getting_back:
+                    rowBlocking.append(passenger.rownr)
+                    colBlocking.append(passenger.colnr)
+                elif passenger.seated:
+                    rowSeated.append(passenger.rownr)
+                    colSeated.append(passenger.colnr)
+                else:
+                    rowRest.append(passenger.rownr)
+                    colRest.append(passenger.colnr)
+
+            plt.scatter(colLeavingBag,
+                        rowLeavingBag, c='b',
                         s=150)  # passengers positions
-            plt.scatter([passenger.colnr for passenger in plane.in_plane_passengers if passenger.luggage],
-                        [passenger.rownr for passenger in plane.in_plane_passengers if passenger.luggage], c='k',
-                        s=40)
-            ax = plt.gca();
+            plt.scatter(colBlocking,
+                        rowBlocking, c='y',
+                        s=150)  # passengers positions
+
+            plt.scatter(colRest,
+                        rowRest, c='r',
+                        s=150)  # passengers positions
+            plt.scatter(colSeated,rowSeated, c='g', s = 150)
+
+            ax = plt.gca()
 
             # Major ticks
-            ax.set_xticks(np.arange(0, plane.layout.shape[1], 1));  # (0,7,1)
-            ax.set_yticks(np.arange(1, 1 + nr_of_rows, 1));  # 0,29,1
+            ax.set_xticks(np.arange(0, plane.layout.shape[1], 1))  # (0,7,1)
+            ax.set_yticks(np.arange(1, 1 + nr_of_rows, 1))  # 0,29,1
 
             # Labels for major ticks
-            ax.set_xticklabels(labels);
-            ax.set_yticklabels(np.arange(1, 1 + nr_of_rows, 1));
+            ax.set_xticklabels(labels)
+            ax.set_yticklabels(np.arange(1, 1 + nr_of_rows, 1))
 
             # Minor ticks
-            ax.set_xticks(np.arange(-.5, plane.layout.shape[1], 1), minor=True);  # -0.5,7,1
-            ax.set_yticks(np.arange(-.5, plane.layout.shape[0], 1), minor=True);  # -.5,29,1
+            ax.set_xticks(np.arange(-.5, plane.layout.shape[1], 1), minor=True)  # -0.5,7,1
+            ax.set_yticks(np.arange(-.5, plane.layout.shape[0], 1), minor=True)  # -.5,29,1
 
             # Gridlines based on minor ticks
-            ax.grid(which='minor', color='black', linestyle='-', linewidth=2)
+            ax.grid(which='minor', color='white', linestyle='-', linewidth=2)
 
             writer.grab_frame()
             if allSeated:
@@ -498,12 +527,12 @@ passengers = []
 nr_of_rows = 30
 n_seats_in_row = 3
 aisle_width = 1
-boarding_method = 'Blocks'
+boarding_method = 'BackToFront'
 
 n_passengers = nr_of_rows * 2 * n_seats_in_row
 
 # == Video settings ==
-video_file = "myvid2.mp4"
+video_file = "test3.mp4"
 fps = 4
 number_of_timesteps = 1000
 labels = ['A', 'B', 'C', None, 'D', 'E', 'F']
@@ -525,20 +554,20 @@ plane.waiting_passengers = passengers_sorted
 
 # Output video writer
 # Emma's writer
-#FFMpegWriter = animation.writers['ffmpeg']
-#metadata = dict(title='Movie Test', artist='Matplotlib', comment='Movie support!')  # kanske överflödig
-#writer = FFMpegWriter(fps=fps, metadata=metadata)
+# FFMpegWriter = animation.writers['ffmpeg']
+# metadata = dict(title='Movie Test', artist='Matplotlib', comment='Movie support!')  # kanske överflödig
+# writer = FFMpegWriter(fps=fps, metadata=metadata)
 
 # Johanna's writer:
-#plt.rcParams['animation.ffmpeg_path'] = 'C:\\Users\\Johanna\\Documents\\Ffmpeg\\bin\\ffmpeg.exe'
-plt.rcParams['animation.ffmpeg_path'] = 'C:/Users/Rebecca/Downloads/ffmpeg-20191125-d5e3d8e-win64-static/ffmpeg-20191125-d5e3d8e-win64-static/bin/ffmpeg'
+plt.rcParams['animation.ffmpeg_path'] = 'C:\\Users\\Johanna\\Documents\\Ffmpeg\\bin\\ffmpeg.exe'
+#plt.rcParams['animation.ffmpeg_path'] = 'C:/Users/Rebecca/Downloads/ffmpeg-20191125-d5e3d8e-win64-static/ffmpeg-20191125-d5e3d8e-win64-static/bin/ffmpeg'
 writer = animation.FFMpegWriter(fps = fps);
 
 fig = plt.figure(figsize=(15, 15))
 ax = fig.gca()
 plt.rcParams.update({'font.size': 22})
 
-cmap = mpl.colors.ListedColormap(['white','black','silver'])
+cmap = mpl.colors.ListedColormap(['black','white','silver'])
 bounds = [-1,1]
 norm = mpl.colors.BoundaryNorm(bounds, cmap.N)
 
@@ -574,11 +603,5 @@ print(f"Max time: {max(aisle_time)}")
 print(f"Blocking nr")
 print(f"Mean: {np.mean(block_nr)}")
 print(f"Median: {np.median(block_nr)}")
-print(f"Min time: {min(block_nr)}")
-print(f"Max time: {max(block_nr)}")
-
-
-
-#plt.hist(lugg_time)#, bins ='Automatic')
-#plt.gca().set(title = 'Time distribution for non luggage time', xlabel='Boarding time', ylabel='Nr of runs')
-#plt.show()
+print(f"Min blocking: {min(block_nr)}")
+print(f"Max blocking: {max(block_nr)}")

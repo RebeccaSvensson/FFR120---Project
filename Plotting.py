@@ -23,13 +23,6 @@ class Passenger:
         self.luggage = True
         self.left_luggage = 0
         self.blocking_destination = None
-        self.seated_sometime = False
-
-        self.seated_time = 0
-        self.blocking_nr = 0
-        self.aisle_time = 0
-        self.non_luggage_time = 0
-        self.first_seated_time = 0
 
     def __repr__(self):
         #      return str(self.id) + ' (' + str(self.rownr) + ',' + str(self.colnr) + ')'
@@ -61,7 +54,6 @@ class Passenger:
                     return True
             elif self.colnr == self.seat_destination[1]:
                 self.seated = True
-                self.seated_sometime = True
                 return True
         return False
 
@@ -88,10 +80,7 @@ class Passenger:
             return False
 
     def now_blocking(self, nr_in_the_way):
-        if not self.blocking:
-            self.blocking = True
-            self.blocking_nr = self.blocking_nr + 1
-
+        self.blocking = True
         self.seated = False
 
         if self.seat_destination[1] == 1 or self.seat_destination[1] == plane.layout.shape[1] - 2:
@@ -142,55 +131,41 @@ def create_boarding_groups(pattern, passengers, plane):
         sorted_list = temp_passenger_list
 
     elif pattern is 'Blocks' or pattern is 'ReversePyramid' or pattern is 'BackToFront':  # Blocks are front, back, middle
-
         n_blocks = 3
-
         limits = np.linspace(0, plane.layout.shape[0], n_blocks + 1)
-
         limits = np.floor(limits)
 
         blocks = []
-
         for i in range(n_blocks):
             blocks.append([])
 
         for passenger in passengers:
             seat_row = passenger.seat_destination[0]
-
             block_list = np.where(limits <= seat_row)[0]
-
             block = block_list[-1]
-
             blocks[block].append(passenger)
 
         if pattern is 'Blocks':
-
             # Sorts the blocks so no connecting blocks are boarded after one another
-
-            for i in range(n_blocks, 0, -2):
-                sorted_list.extend(blocks[i - 1])
+            for i in range(0, n_blocks, 2):
+                sorted_list.extend(blocks[i])
 
             for i in range(1, n_blocks, 2):
                 sorted_list.extend(blocks[i])
-
 
         elif pattern is 'ReversePyramid':
-
             for i in range(0, n_blocks, 2):
                 temp_list = create_boarding_groups('WindowAisle', blocks[i], plane)
-
                 sorted_list.extend(temp_list)
 
             for i in range(1, n_blocks, 2):
                 temp_list = create_boarding_groups('WindowAisle', blocks[i], plane)
-
                 sorted_list.extend(temp_list)
 
-
         elif pattern is 'BackToFront':
-
             for i in range(n_blocks - 1, -1, -1):
                 sorted_list.extend(blocks[i])
+
 
     elif pattern is 'WindowAisle':
         window = []
@@ -342,7 +317,6 @@ def step_in_time():
             # Case 7
             if passenger.correct_seat():
                 passenger.seated = True
-                passenger.seated_sometime = True
                 passenger.waiting = False
                 passenger.getting_back = False
 
@@ -442,17 +416,6 @@ def step_in_time():
 
     plane.let_in_more_passengers()
 
-    for passenger in plane.in_plane_passengers:
-        if passenger.seated_sometime:
-            passenger.first_seated_time = passenger.first_seated_time + 1
-            if passenger.seated:
-                passenger.seated_time = passenger.seated_time + 1
-        # Fix something with aisletime
-        else:
-            passenger.aisle_time = passenger.aisle_time + 1
-        if not passenger.luggage:
-            passenger.non_luggage_time = passenger.non_luggage_time + 1
-
     if seated == len(passengers):
         return True
 
@@ -468,153 +431,135 @@ def update_position(id, rownr, colnr, rownrdir, colnrdir):
 
 def tell_them_to_move(id, other_ids):
     for other_id in other_ids:
-        if passengers[other_id].rownr == passengers[other_id].seat_destination[0]:
-            passengers[other_id].now_blocking(len(other_ids))
+        passengers[other_id].now_blocking(len(other_ids))
     passengers[id].waiting = True
 
 
 def start_boarding():
-    for t in range(number_of_timesteps):
-        allSeated = step_in_time()
+    with writer.saving(fig, video_file, 100):
+        for t in range(number_of_timesteps):
+            # t += 1
+            # print(t)
+            allSeated = step_in_time()
 
-        if allSeated:
-            return t
-    return number_of_timesteps
+            fig.clear()
+            plt.title(f'Boarding method: {boarding_method}. Timestep: {t} ')
+#            plt.title(f'Plane layout')
 
+            img = plt.imshow(plane.layout, interpolation='nearest', cmap=cmap)  #
+            #        plt.scatter(x=np.random.randint(0, 6, 10), y=np.random.randint(0, 29, 10), c='r', s=150)  # passengers positions
+            """Startoflayout
+            rowLeavingBag = []
+            colLeavingBag = []
+            rowBlocking = []
+            colBlocking = []
+            rowRest = []
+            colRest = []
+
+            for passenger in plane.in_plane_passengers:
+                if passenger.left_luggage > 0 and passenger.left_luggage < 3:
+                    rowLeavingBag.append(passenger.rownr)
+                    colLeavingBag.append(passenger.colnr)
+                elif passenger.blocking or passenger.getting_back:
+                    rowBlocking.append(passenger.rownr)
+                    colBlocking.append(passenger.colnr)
+                else:
+                    rowRest.append(passenger.rownr)
+                    colRest.append(passenger.colnr)
+
+            plt.scatter(colLeavingBag,
+                        rowLeavingBag, c='b',
+                        s=150)  # passengers positions
+            plt.scatter(colBlocking,
+                        rowBlocking, c='y',
+                        s=150)  # passengers positions
+
+            plt.scatter(colRest,
+                        rowRest, c='r',
+                        s=150)  # passengers positions
+
+
+            """plt.scatter([passenger.colnr for passenger in plane.in_plane_passengers],
+                        [passenger.rownr for passenger in plane.in_plane_passengers], c='r',
+                        s=150)  # passengers positions
+            plt.scatter([passenger.colnr for passenger in plane.in_plane_passengers if passenger.left_luggage > 0 and passenger.left_luggage < 3],
+                        [passenger.rownr for passenger in plane.in_plane_passengers if passenger.left_luggage > 0 and passenger.left_luggage < 3],
+                        c='b', s=150)"""
+            plt.scatter([passenger.colnr for passenger in plane.in_plane_passengers if passenger.luggage],
+                        [passenger.rownr for passenger in plane.in_plane_passengers if passenger.luggage], c='w',
+                        s=40)
+                        
+            endoflayout"""
+            ax = plt.gca()
+
+            # Major ticks
+            ax.set_xticks(np.arange(0, plane.layout.shape[1], 1));  # (0,7,1)
+            ax.set_yticks(np.arange(1, 1 + nr_of_rows, 1));  # 0,29,1
+
+            # Labels for major ticks
+            ax.set_xticklabels(labels);
+            ax.set_yticklabels(np.arange(1, 1 + nr_of_rows, 1));
+
+            # Minor ticks
+            ax.set_xticks(np.arange(-.5, plane.layout.shape[1], 1), minor=True);  # -0.5,7,1
+            ax.set_yticks(np.arange(-.5, plane.layout.shape[0], 1), minor=True);  # -.5,29,1
+
+            # Gridlines based on minor ticks
+            ax.grid(which='minor', color='white', linestyle='-', linewidth=2)
+
+            writer.grab_frame()
+            if allSeated:
+                break
+
+
+passengers = []
 
 # == Layout settings ==
 nr_of_rows = 30
 n_seats_in_row = 3
 aisle_width = 1
-boarding_method = 'SteffenModified'
+boarding_method = 'Random'
 
 n_passengers = nr_of_rows * 2 * n_seats_in_row
 
-number_of_timesteps = 1000
-nr_runs = 1000
+# == Video settings ==
+video_file = "test2.mp4"
+fps = 2
+number_of_timesteps = 20
+labels = ['A', 'B', 'C', None, 'D', 'E', 'F']
 
-# == Initialize ==
-time_results = np.zeros(nr_runs)
+# == Get the passengers in order ==
+plane = Plane(nr_of_rows, n_seats_in_row, aisle_width)
+plane.passengers = passengers
 
-mean_seat_sum = 0
-median_seat_sum = 0
-min_seat_sum = 0
-max_seat_sum = 0
+for i in range(n_passengers):
+    passenger = Passenger(i)
+    passengers.append(passenger)
 
-mean_first_seat_sum = 0
-median_first_seat_sum = 0
-min_first_seat_sum = 0
-max_first_seat_sum = 0
+assign_seats(passengers, plane)
 
-mean_block_nr_sum = 0
-median_block_nr_sum = 0
-min_block_sum = 0
-max_block_sum = 0
+passengers_sorted = create_boarding_groups(boarding_method, passengers, plane)
+plane.waiting_passengers = passengers_sorted
 
-mean_aisle_sum = 0
-median_aisle_sum = 0
-min_aisle_sum = 0
-max_aisle_sum = 0
+# == Video initialization ==
 
-# ===========
+# Output video writer
+# Emma's writer
+# FFMpegWriter = animation.writers['ffmpeg']
+# metadata = dict(title='Movie Test', artist='Matplotlib', comment='Movie support!')  # kanske överflödig
+# writer = FFMpegWriter(fps=fps, metadata=metadata)
 
+# Johanna's writer:
+plt.rcParams['animation.ffmpeg_path'] = 'C:\\Users\\Johanna\\Documents\\Ffmpeg\\bin\\ffmpeg.exe'
+writer = animation.FFMpegWriter(fps=fps);
 
-it = 0
-while it < nr_runs:
-    passengers = []
+fig = plt.figure(figsize=(15, 15))
+ax = fig.gca()
+plt.rcParams.update({'font.size': 22})
 
-    # == Get the passengers in order ==
-    plane = Plane(nr_of_rows, n_seats_in_row, aisle_width)
-    plane.passengers = passengers
+cmap = mpl.colors.ListedColormap(['black', 'white', 'silver'])
+bounds = [-1, 1]
+norm = mpl.colors.BoundaryNorm(bounds, cmap.N)
 
-    for i in range(n_passengers):
-        passenger = Passenger(i)
-        passengers.append(passenger)
-
-    assign_seats(passengers, plane)
-
-    passengers_sorted = create_boarding_groups(boarding_method, passengers, plane)
-    plane.waiting_passengers = passengers_sorted
-
-    # == Start boarding ==
-    ti = start_boarding()
-    if ti != (number_of_timesteps):
-        time_results[it] = ti
-        it = it + 1
-
-        seat_time = [passenger.seated_time for passenger in passengers]
-        mean_seat_sum = mean_seat_sum + np.mean(seat_time)
-        median_seat_sum = median_seat_sum + np.median(seat_time)
-        min_seat_sum = min_seat_sum + min(seat_time)
-        max_seat_sum = max_seat_sum + max(seat_time)
-
-        first_seat_time = [passenger.first_seated_time for passenger in passengers]
-        mean_first_seat_sum = mean_first_seat_sum + np.mean(first_seat_time)
-        median_first_seat_sum = median_first_seat_sum + np.median(first_seat_time)
-        min_first_seat_sum = min_first_seat_sum + min(first_seat_time)
-        max_first_seat_sum = max_first_seat_sum + max(first_seat_time)
-
-        block_nr = [passenger.blocking_nr for passenger in passengers]
-        mean_block_nr_sum = mean_block_nr_sum + np.mean(block_nr)
-        median_block_nr_sum = median_block_nr_sum + np.median(block_nr)
-        min_block_sum = min_block_sum + min(block_nr)
-        max_block_sum = max_block_sum + max(block_nr)
-
-        aisle_time = [passenger.aisle_time for passenger in passengers]
-        mean_aisle_sum = mean_aisle_sum + np.mean(aisle_time)
-        median_aisle_sum = median_aisle_sum + np.median(aisle_time)
-        min_aisle_sum = min_aisle_sum + min(aisle_time)
-        max_aisle_sum = max_aisle_sum + max(aisle_time)
-
-
-mean_seat = mean_seat_sum/nr_runs
-median_seat = median_seat_sum/nr_runs
-min_seat = min_seat_sum/nr_runs
-max_seat = max_seat_sum/nr_runs
-
-mean_first_seat = mean_first_seat_sum/nr_runs
-median_first_seat = median_first_seat_sum/nr_runs
-min_first_seat = min_first_seat_sum/nr_runs
-max_first_seat = max_first_seat_sum/nr_runs
-
-mean_block_nr = mean_block_nr_sum/nr_runs
-median_block_nr = median_block_nr_sum/nr_runs
-min_block = min_block_sum/nr_runs
-max_block = max_block_sum/nr_runs
-
-mean_aisle = mean_aisle_sum/nr_runs
-median_aisle = median_aisle_sum/nr_runs
-min_aisle = min_aisle_sum/nr_runs
-max_aisle = max_aisle_sum/nr_runs
-
-print("Seated time:")
-print(f"Mean: {mean_seat}")
-print(f"Median: {median_seat}")
-print(f"Min time: {min_seat}")
-print(f"Max time: {max_seat}")
-
-print(f"Time from first seated")
-print(f"Mean: {mean_first_seat}")
-print(f"Median: {median_first_seat}")
-print(f"Min time: {min_first_seat}")
-print(f"Max time: {max_first_seat}")
-
-print(f"Aisle time")
-print(f"Mean: {mean_aisle}")
-print(f"Median: {median_aisle}")
-print(f"Min time: {min_aisle}")
-print(f"Max time: {max_aisle}")
-
-print(f"Blocking nr")
-print(f"Mean: {mean_block_nr}")
-print(f"Median: {median_block_nr}")
-print(f"Min time: {min_block}")
-print(f"Max time: {max_block}")
-
-print("Total time")
-print(f"Mean: {np.mean(time_results)}")
-print(f"Median: {np.median(time_results)}")
-print(f"Min time: {min(time_results)}")
-print(f"Max time: {max(time_results)}")
-
-
+# == Start boarding ==
+start_boarding()
