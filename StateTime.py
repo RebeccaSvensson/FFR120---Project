@@ -23,6 +23,13 @@ class Passenger:
         self.luggage = True
         self.left_luggage = 0
         self.blocking_destination = None
+        self.seated_sometime = False
+
+        self.seated_time = 0
+        self.blocking_nr = 0
+        self.aisle_time = 0
+        self.non_luggage_time = 0
+        self.first_seated_time = 0
 
     def __repr__(self):
         #      return str(self.id) + ' (' + str(self.rownr) + ',' + str(self.colnr) + ')'
@@ -54,6 +61,7 @@ class Passenger:
                     return True
             elif self.colnr == self.seat_destination[1]:
                 self.seated = True
+                self.seated_sometime = True
                 return True
         return False
 
@@ -80,7 +88,10 @@ class Passenger:
             return False
 
     def now_blocking(self, nr_in_the_way):
-        self.blocking = True
+        if not self.blocking:
+            self.blocking = True
+            self.blocking_nr = self.blocking_nr + 1
+
         self.seated = False
 
         if self.seat_destination[1] == 1 or self.seat_destination[1] == plane.layout.shape[1] - 2:
@@ -317,6 +328,7 @@ def step_in_time():
             # Case 7
             if passenger.correct_seat():
                 passenger.seated = True
+                passenger.seated_sometime = True
                 passenger.waiting = False
                 passenger.getting_back = False
 
@@ -416,6 +428,17 @@ def step_in_time():
 
     plane.let_in_more_passengers()
 
+    for passenger in plane.in_plane_passengers:
+        if passenger.seated_sometime:
+            passenger.first_seated_time = passenger.first_seated_time + 1
+            if passenger.seated:
+                passenger.seated_time = passenger.seated_time + 1
+        # Fix something with aisletime
+        else:
+            passenger.aisle_time = passenger.aisle_time + 1
+        if not passenger.luggage:
+            passenger.non_luggage_time = passenger.non_luggage_time + 1
+
     if seated == len(passengers):
         return True
 
@@ -440,27 +463,21 @@ def start_boarding():
         allSeated = step_in_time()
 
         if allSeated:
-            return t
-    return t
+            break
 
-
-nr_runs = 1000
-time_results = np.zeros(nr_runs)
 
 # == Layout settings ==
 nr_of_rows = 30
 n_seats_in_row = 3
 aisle_width = 1
-boarding_method = 'Blocks'
+boarding_method = 'Random'
 
 n_passengers = nr_of_rows * 2 * n_seats_in_row
 
-# == Video settings ==
 number_of_timesteps = 1000
 
 it = 0
 while it < nr_runs:
-    print(it)
     passengers = []
 
     # == Get the passengers in order ==
@@ -478,15 +495,51 @@ while it < nr_runs:
 
     # == Start boarding ==
     ti = start_boarding()
-    if ti != (number_of_timesteps-1):
+    if ti != (number_of_timesteps):
         time_results[it] = ti
-        it = it+1
+        it = it + 1
 
-print(f"Mean: {np.mean(time_results)}")
-print(f"Median: {np.median(time_results)}")
-print(f"Min time: {min(time_results)}")
-print(f"Max time: {max(time_results)}")
+        seat_time = [passenger.seated_time for passenger in passengers]
+        mean_seat_sum = mean_seat_sum + np.mean(seat_time)
+        median_seat_sum = median_seat_sum + np.median(seat_time)
+        min_seat_sum = min_seat_sum + min(seat_time)
+        max_seat_sum = max_seat_sum + max(seat_time)
 
-plt.hist(time_results, bins = 30)
-plt.gca().set(title = 'Time distribution for Rotating Blocks', xlabel='Boarding time', ylabel='Nr of runs')
-plt.show()
+        first_seat_time = [passenger.first_seated_time for passenger in passengers]
+        mean_first_seat_sum = mean_first_seat_sum + np.mean(first_seat_time)
+        median_first_seat_sum = median_first_seat_sum + np.median(first_seat_time)
+        min_first_seat_sum = min_first_seat_sum + min(first_seat_time)
+        max_first_seat_sum = max_first_seat_sum + max(first_seat_time)
+
+        block_nr = [passenger.blocking_nr for passenger in passengers]
+        mean_block_nr_sum = mean_block_nr_sum + np.mean(block_nr)
+        median_block_nr_sum = median_block_nr_sum + np.median(block_nr)
+        min_seat_sum = min_seat_sum + min(block_nr)
+        max_seat_sum = max_seat_sum + max(block_nr)
+
+        aisle_time = [passenger.aisle_time for passenger in passengers]
+
+print(f"Seated time")
+print(f"Mean: {np.mean(seat_time)}")
+print(f"Median: {np.median(seat_time)}")
+print(f"Min time: {min(seat_time)}")
+print(f"Max time: {max(seat_time)}")
+
+print(f"Time from first seated")
+print(f"Mean: {np.mean(first_seat_time)}")
+print(f"Median: {np.median(first_seat_time)}")
+print(f"Min time: {min(first_seat_time)}")
+print(f"Max time: {max(first_seat_time)}")
+
+print(f"Aisle time")
+print(f"Mean: {np.mean(aisle_time)}")
+print(f"Median: {np.median(aisle_time)}")
+print(f"Min time: {min(aisle_time)}")
+print(f"Max time: {max(aisle_time)}")
+
+print(f"Blocking nr")
+print(f"Mean: {np.mean(block_nr)}")
+print(f"Median: {np.median(block_nr)}")
+print(f"Min time: {min(block_nr)}")
+print(f"Max time: {max(block_nr)}")
+

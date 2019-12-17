@@ -22,6 +22,13 @@ class Passenger:
         self.luggage = True
         self.left_luggage = 0
         self.blocking_destination = None
+        self.seated_sometime = False
+
+        self.seated_time = 0
+        self.blocking_nr = 0
+        self.aisle_time = 0
+        self.non_luggage_time = 0
+        self.first_seated_time = 0
 
     def __repr__(self):
   #      return str(self.id) + ' (' + str(self.rownr) + ',' + str(self.colnr) + ')'
@@ -53,6 +60,7 @@ class Passenger:
                     return True
             elif self.colnr == self.seat_destination[1]:
                 self.seated = True
+                self.seated_sometime = True
                 return True
         return False
 
@@ -79,7 +87,10 @@ class Passenger:
             return False
             
     def now_blocking(self, nr_in_the_way):
-        self.blocking = True
+        if not self.blocking:
+            self.blocking = True
+            self.blocking_nr = self.blocking_nr + 1
+
         self.seated = False
 
         if self.seat_destination[1] == 1 or self.seat_destination[1] == plane.layout.shape[1] - 2:
@@ -313,6 +324,7 @@ def step_in_time():
             # Case 7
             if passenger.correct_seat():
                 passenger.seated = True
+                passenger.seated_sometime = True
                 passenger.waiting = False
                 passenger.getting_back = False
 
@@ -410,7 +422,20 @@ def step_in_time():
             colnrdir = 1
             update_position(passenger.id,rownr,colnr,rownrdir,colnrdir)
 
+
     plane.let_in_more_passengers()
+
+    for passenger in plane.in_plane_passengers:
+        if passenger.seated_sometime:
+            passenger.first_seated_time = passenger.first_seated_time + 1
+            if passenger.seated:
+                passenger.seated_time = passenger.seated_time + 1
+        #Fix something with aisletime
+        else:
+            passenger.aisle_time = passenger.aisle_time + 1
+        if not passenger.luggage:
+            passenger.non_luggage_time = passenger.non_luggage_time + 1
+
 
     if seated == len(passengers):
         return True
@@ -470,7 +495,7 @@ def start_boarding():
 passengers = []
 
 # == Layout settings ==
-nr_of_rows = 10
+nr_of_rows = 30
 n_seats_in_row = 3
 aisle_width = 1
 boarding_method = 'WindowAisle'
@@ -518,3 +543,41 @@ norm = mpl.colors.BoundaryNorm(bounds, cmap.N)
 
 # == Start boarding ==
 start_boarding()
+
+# == Histogram of time distribution over states ==
+
+non_lugg_time = [passenger.non_luggage_time for passenger in passengers]
+seat_time = [passenger.seated_time for passenger in passengers]
+first_seat_time = [passenger.first_seated_time for passenger in passengers]
+block_nr = [passenger.blocking_nr for passenger in passengers]
+aisle_time = [passenger.aisle_time for passenger in passengers]
+
+print(f"Seated time")
+print(f"Mean: {np.mean(seat_time)}")
+print(f"Median: {np.median(seat_time)}")
+print(f"Min time: {min(seat_time)}")
+print(f"Max time: {max(seat_time)}")
+
+print(f"Time from first seated")
+print(f"Mean: {np.mean(first_seat_time)}")
+print(f"Median: {np.median(first_seat_time)}")
+print(f"Min time: {min(first_seat_time)}")
+print(f"Max time: {max(first_seat_time)}")
+
+print(f"Aisle time")
+print(f"Mean: {np.mean(aisle_time)}")
+print(f"Median: {np.median(aisle_time)}")
+print(f"Min time: {min(aisle_time)}")
+print(f"Max time: {max(aisle_time)}")
+
+print(f"Blocking nr")
+print(f"Mean: {np.mean(block_nr)}")
+print(f"Median: {np.median(block_nr)}")
+print(f"Min time: {min(block_nr)}")
+print(f"Max time: {max(block_nr)}")
+
+
+
+#plt.hist(lugg_time)#, bins ='Automatic')
+#plt.gca().set(title = 'Time distribution for non luggage time', xlabel='Boarding time', ylabel='Nr of runs')
+#plt.show()
