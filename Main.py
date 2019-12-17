@@ -450,7 +450,7 @@ def start_boarding():
 
             # Major ticks
             ax.set_xticks(np.arange(0, plane.layout.shape[1], 1));  # (0,7,1)
-            ax.set_yticks(np.arange(1, plane.layout.shape[0], 1));  # 0,29,1
+            ax.set_yticks(np.arange(1, 1 + nr_of_rows, 1));  # 0,29,1
 
             # Labels for major ticks
             ax.set_xticklabels(labels);
@@ -467,14 +467,13 @@ def start_boarding():
             if allSeated:
                 break
 
-
 passengers = []
 
 # == Layout settings ==
 nr_of_rows = 10
 n_seats_in_row = 3
 aisle_width = 1
-boarding_method = 'Blocks'
+boarding_method = 'WindowAisle'
 
 n_passengers = nr_of_rows * 2 * n_seats_in_row
 
@@ -519,4 +518,3 @@ norm = mpl.colors.BoundaryNorm(bounds, cmap.N)
 
 # == Start boarding ==
 start_boarding()
-
