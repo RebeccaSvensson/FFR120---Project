@@ -400,7 +400,7 @@ def step_in_time():
 
                 if idAisle != -1:
                     destAisle = passengers[idAisle].seat_destination
-                    if destAisle[1] == destcolnr - destcoldir:
+                    if destAisle[1] == destcolnr - destcoldir and destAisle[0] == destrownr:
                         tell_them_to_move(passenger.id, [idAisle])
                         continue
                 if idFirst != -1:
@@ -468,8 +468,7 @@ def update_position(id, rownr, colnr, rownrdir, colnrdir):
 
 def tell_them_to_move(id, other_ids):
     for other_id in other_ids:
-        if passengers[other_id].rownr == passengers[other_id].seat_destination[0]:
-            passengers[other_id].now_blocking(len(other_ids))
+        passengers[other_id].now_blocking(len(other_ids))
     passengers[id].waiting = True
 
 

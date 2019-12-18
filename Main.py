@@ -27,7 +27,6 @@ class Passenger:
         self.seated_time = 0
         self.blocking_nr = 0
         self.aisle_time = 0
-        self.non_luggage_time = 0
         self.first_seated_time = 0
 
     def __repr__(self):
@@ -382,7 +381,7 @@ def step_in_time():
 
                 if idAisle != -1:
                     destAisle = passengers[idAisle].seat_destination
-                    if destAisle[1] == destcolnr - destcoldir:
+                    if destAisle[1] == destcolnr - destcoldir and destAisle[0] == destrownr:
                         tell_them_to_move(passenger.id, [idAisle])
                         continue
                 if idFirst != -1:
@@ -407,7 +406,6 @@ def step_in_time():
                             idOthers.append(idAisle)
                 if idSeat1 != -1:
                     idOthers.append(idSeat1)
-                    # passengers(idSeat2).tell_them_to_move()
                 if idSeat2 != -1:
                     idOthers.append(idSeat2)
                 if len(idOthers) != 0:
@@ -433,9 +431,6 @@ def step_in_time():
         #Fix something with aisletime
         else:
             passenger.aisle_time = passenger.aisle_time + 1
-        if not passenger.luggage:
-            passenger.non_luggage_time = passenger.non_luggage_time + 1
-
 
     if seated == len(passengers):
         return True
@@ -450,8 +445,7 @@ def update_position(id,rownr,colnr,rownrdir,colnrdir):
 
 def tell_them_to_move(id, other_ids):
     for other_id in other_ids:
-        if passengers[other_id].rownr == passengers[other_id].seat_destination[0]:
-            passengers[other_id].now_blocking(len(other_ids))
+        passengers[other_id].now_blocking(len(other_ids))
     passengers[id].waiting = True
 
 def start_boarding():
@@ -576,7 +570,6 @@ start_boarding()
 
 # == Histogram of time distribution over states ==
 
-non_lugg_time = [passenger.non_luggage_time for passenger in passengers]
 seat_time = [passenger.seated_time for passenger in passengers]
 first_seat_time = [passenger.first_seated_time for passenger in passengers]
 block_nr = [passenger.blocking_nr for passenger in passengers]
